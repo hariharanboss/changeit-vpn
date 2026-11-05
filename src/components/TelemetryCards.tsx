@@ -20,7 +20,7 @@ export const TelemetryCards: React.FC<TelemetryCardsProps> = ({ telemetry, isCon
             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Download</p>
             <p className="text-base font-bold text-white font-mono leading-tight">
               {isConnected ? telemetry.downloadSpeedMbps.toFixed(1) : '0.0'}
-              <span className="text-[10px] text-gray-400 font-normal ml-1">Mbps</span>
+              <span className="text-[10px] text-gray-400 font-normal ml-1">MB/s</span>
             </p>
           </div>
         </div>
@@ -36,7 +36,7 @@ export const TelemetryCards: React.FC<TelemetryCardsProps> = ({ telemetry, isCon
             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Upload</p>
             <p className="text-base font-bold text-white font-mono leading-tight">
               {isConnected ? telemetry.uploadSpeedMbps.toFixed(1) : '0.0'}
-              <span className="text-[10px] text-gray-400 font-normal ml-1">Mbps</span>
+              <span className="text-[10px] text-gray-400 font-normal ml-1">MB/s</span>
             </p>
           </div>
         </div>

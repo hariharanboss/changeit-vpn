@@ -84,8 +84,8 @@ export const App: React.FC = () => {
 
     const interval = setInterval(() => {
       setTelemetry((prev) => {
-        const dl = parseFloat((Math.random() * 45 + 50).toFixed(1));
-        const ul = parseFloat((Math.random() * 15 + 10).toFixed(1));
+        const dl = parseFloat((Math.random() * 8 + 6.5).toFixed(1)); // in MB/s (MegaBytes)
+        const ul = parseFloat((Math.random() * 2.5 + 1.8).toFixed(1)); // in MB/s (MegaBytes)
         const jitter = Math.floor(Math.random() * 6 - 3);
 
         return {
@@ -94,8 +94,8 @@ export const App: React.FC = () => {
           uploadSpeedMbps: ul,
           latencyMs: Math.max(12, selectedProfile.ping + jitter),
           uptimeSeconds: prev.uptimeSeconds + 1,
-          bytesIn: prev.bytesIn + Math.floor(dl * 125000),
-          bytesOut: prev.bytesOut + Math.floor(ul * 125000),
+          bytesIn: prev.bytesIn + Math.floor(dl * 1024 * 1024),
+          bytesOut: prev.bytesOut + Math.floor(ul * 1024 * 1024),
         };
       });
     }, 1000);
