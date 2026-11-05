@@ -14,7 +14,7 @@ const isElectron = typeof window !== 'undefined' && window.require;
 const electron = isElectron ? window.require('electron') : null;
 
 export const App: React.FC = () => {
-  const [profiles] = useState<VpnProfile[]>(DEFAULT_PROFILES);
+  const [profiles, setProfiles] = useState<VpnProfile[]>(DEFAULT_PROFILES);
   const [selectedProfile, setSelectedProfile] = useState<VpnProfile>(profiles[0]);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
@@ -28,6 +28,17 @@ export const App: React.FC = () => {
     uptimeSeconds: 0,
     publicIp: 'Protected',
   });
+
+  useEffect(() => {
+    if (electron) {
+      electron.ipcRenderer.invoke('vpn:fetch-nodes').then((remoteNodes: VpnProfile[] | null) => {
+        if (remoteNodes && remoteNodes.length > 0) {
+          setProfiles(remoteNodes);
+          setSelectedProfile(remoteNodes[0]);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const handleToggleConnection = async () => {
     if (connectionState === 'connected') {

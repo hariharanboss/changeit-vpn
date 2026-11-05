@@ -2,9 +2,13 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
+const https = require('https');
 
 let mainWindow;
 let xrayProcess = null;
+
+// Admin Remote Config URL (Secret Gist)
+const REMOTE_CONFIG_URL = 'https://gist.githubusercontent.com/hariharanboss/15223ea1ed0d4bf97d16d2365777a9be/raw/opentunnel_nodes.json';
 
 function setWindowsProxy(enable) {
   if (enable) {
@@ -61,9 +65,102 @@ function getXrayPaths() {
   return null;
 }
 
-ipcMain.handle('vpn:connect', async () => {
+function generateXrayConfig(node) {
+  return {
+    log: { loglevel: 'none' },
+    inbounds: [
+      {
+        tag: 'socks-in',
+        port: 10808,
+        listen: '127.0.0.1',
+        protocol: 'socks',
+        sniffing: { enabled: true, destOverride: ['http', 'tls'] },
+        settings: { auth: 'noauth', udp: true }
+      },
+      {
+        tag: 'http-in',
+        port: 10809,
+        listen: '127.0.0.1',
+        protocol: 'http',
+        sniffing: { enabled: true, destOverride: ['http', 'tls'] }
+      }
+    ],
+    outbounds: [
+      {
+        tag: 'proxy',
+        protocol: 'vless',
+        settings: {
+          vnext: [
+            {
+              address: node.endpoint,
+              port: node.port || 443,
+              users: [
+                {
+                  id: node.uuid || 'e4b11f58-3921-4f16-b8f2-89dc087799aa',
+                  encryption: 'none',
+                  level: 0
+                }
+              ]
+            }
+          ]
+        },
+        streamSettings: {
+          network: 'ws',
+          security: 'tls',
+          wsSettings: {
+            path: node.path || '/tunnel'
+          }
+        }
+      },
+      {
+        tag: 'direct',
+        protocol: 'freedom'
+      }
+    ]
+  };
+}
+
+async function fetchRemoteNodes() {
   return new Promise((resolve) => {
+    const req = https.get(REMOTE_CONFIG_URL, { timeout: 4000 }, (res) => {
+      if (res.statusCode !== 200) return resolve(null);
+      let rawData = '';
+      res.on('data', (chunk) => { rawData += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(rawData);
+          if (parsed && Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+            const paths = getXrayPaths();
+            if (paths) {
+              const activeNode = parsed.nodes[0];
+              const generatedCfg = generateXrayConfig(activeNode);
+              const localCfgPath = path.join(paths.cwd, 'config.local.json');
+              fs.writeFileSync(localCfgPath, JSON.stringify(generatedCfg, null, 2), 'utf-8');
+            }
+            return resolve(parsed.nodes);
+          }
+        } catch (e) {
+          // ignore
+        }
+        resolve(null);
+      });
+    });
+
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+ipcMain.handle('vpn:fetch-nodes', async () => {
+  return fetchRemoteNodes();
+});
+
+ipcMain.handle('vpn:connect', async () => {
+  return new Promise(async (resolve) => {
     try {
+      // Refresh config before connecting if reachable
+      await fetchRemoteNodes();
+
       const paths = getXrayPaths();
       if (!paths) {
         return resolve({ status: 'error', error: 'xray.exe not found' });
@@ -95,7 +192,11 @@ ipcMain.handle('vpn:disconnect', async () => {
   });
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  // Fetch remote node configuration in background
+  fetchRemoteNodes();
+});
 
 app.on('will-quit', () => {
   setWindowsProxy(false);
