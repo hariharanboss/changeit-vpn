@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Stethoscope, 
   Shield, 
   ShieldCheck, 
   SlidersHorizontal, 
@@ -11,8 +10,6 @@ import { VpnProfile, ConnectionState, TelemetryData } from './types';
 import { ConnectButton } from './components/ConnectButton';
 import { TelemetryCards } from './components/TelemetryCards';
 import { ServerSelector } from './components/ServerSelector';
-import { NetworkDiagnosticModal } from './components/NetworkDiagnosticModal';
-
 const isElectron = typeof window !== 'undefined' && window.require;
 const electron = isElectron ? window.require('electron') : null;
 
@@ -34,8 +31,6 @@ export const App: React.FC = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
-  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
-
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     bytesIn: 0,
     bytesOut: 0,
@@ -123,17 +118,6 @@ export const App: React.FC = () => {
               </span>
             </h1>
           </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center space-x-2.5">
-          <button
-            onClick={() => setIsDiagnosticOpen(true)}
-            className="flex items-center space-x-1.5 text-xs px-3.5 py-1.5 rounded-xl bg-[#141824]/80 hover:bg-[#1a2030] border border-white/5 text-gray-300 hover:text-white transition-all shadow-sm"
-          >
-            <Stethoscope className="w-3.5 h-3.5 text-blue-400" />
-            <span>Firewall Probe</span>
-          </button>
         </div>
       </header>
 
@@ -232,12 +216,6 @@ export const App: React.FC = () => {
           </div>
         </section>
       </main>
-
-      {/* Network Diagnostic Modal */}
-      <NetworkDiagnosticModal
-        isOpen={isDiagnosticOpen}
-        onClose={() => setIsDiagnosticOpen(false)}
-      />
     </div>
   );
 };
