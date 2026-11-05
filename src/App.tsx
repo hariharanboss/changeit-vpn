@@ -14,19 +14,7 @@ const isElectron = typeof window !== 'undefined' && window.require;
 const electron = isElectron ? window.require('electron') : null;
 
 export const App: React.FC = () => {
-  const [profiles] = useState<VpnProfile[]>([
-    {
-      id: 'default-stealth-node',
-      name: 'Primary Stealth Gateway',
-      country: 'Germany',
-      countryCode: 'DE',
-      endpoint: 'gateway.opentunnel.net',
-      port: 443,
-      protocol: 'Stealth-TLS',
-      ping: 85,
-    },
-    ...DEFAULT_PROFILES
-  ]);
+  const [profiles] = useState<VpnProfile[]>(DEFAULT_PROFILES);
   const [selectedProfile, setSelectedProfile] = useState<VpnProfile>(profiles[0]);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);

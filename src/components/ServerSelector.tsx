@@ -22,10 +22,10 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
           <h3 className="text-xs font-bold text-white tracking-wider uppercase">
             Select Location
           </h3>
-          <p className="text-[11px] text-gray-400">Optimal stealth gateway nodes</p>
+          <p className="text-[11px] text-gray-400">Verified campus bypass gateway</p>
         </div>
         <span className="text-[11px] bg-white/5 border border-white/5 px-2.5 py-1 rounded-full text-gray-400 font-mono">
-          {profiles.length} Nodes
+          {profiles.length} Active Node
         </span>
       </div>
 
