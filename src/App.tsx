@@ -111,7 +111,7 @@ export const App: React.FC = () => {
           </div>
           <div>
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
-              <span>OpenTunnel</span>
+              <span>ChangeIt</span>
               <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
                 v1.3.0
               </span>

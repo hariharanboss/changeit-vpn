@@ -27,7 +27,7 @@ function createWindow() {
     maximizable: false,      // Disables the maximize/fullscreen button
     fullscreenable: false,   // Disables fullscreen mode
     backgroundColor: '#0a0d14',
-    title: 'OpenTunnel Desktop',
+    title: 'ChangeIt',
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,

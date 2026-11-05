@@ -1,7 +1,7 @@
 {
-  "name": "opentunnel-desktop",
-  "version": "1.2.0",
-  "description": "Campus-Bypass Stealth VPN Desktop Client with Built-in AdBlocker",
+  "name": "changeit",
+  "version": "1.3.0",
+  "description": "ChangeIt - Firewall-Resilient Stealth Network Client",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -12,8 +12,8 @@
     "package:win": "npm run build && electron-builder --win"
   },
   "build": {
-    "appId": "com.opentunnel.desktop",
-    "productName": "OpenTunnel",
+    "appId": "com.changeit.desktop",
+    "productName": "ChangeIt",
     "directories": {
       "output": "release"
     },
