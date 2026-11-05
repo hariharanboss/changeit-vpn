@@ -17,9 +17,12 @@ function setWindowsProxy(enable) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 750,
-    backgroundColor: '#0b0e14',
+    width: 1040,
+    height: 720,
+    resizable: false,        // Disables window resizing
+    maximizable: false,      // Disables the maximize/fullscreen button
+    fullscreenable: false,   // Disables fullscreen mode
+    backgroundColor: '#0a0d14',
     title: 'OpenTunnel Desktop',
     autoHideMenuBar: true,
     webPreferences: {
@@ -33,7 +36,6 @@ function createWindow() {
   mainWindow.loadFile(indexPath);
 }
 
-// Find xray.exe accurately across dev and packaged modes
 function getXrayPaths() {
   const possiblePaths = [
     path.join(__dirname, '../bin/xray'),
@@ -66,18 +68,6 @@ ipcMain.handle('vpn:connect', async () => {
       xrayProcess = spawn(paths.xrayExe, ['run', '-c', paths.configJson], {
         cwd: paths.cwd,
         windowsHide: true,
-      });
-
-      xrayProcess.on('error', (err) => {
-        if (mainWindow) mainWindow.webContents.send('vpn:log', `Spawn error: ${err.message}`);
-      });
-
-      xrayProcess.stdout.on('data', (data) => {
-        if (mainWindow) mainWindow.webContents.send('vpn:log', data.toString());
-      });
-
-      xrayProcess.stderr.on('data', (data) => {
-        if (mainWindow) mainWindow.webContents.send('vpn:log', data.toString());
       });
 
       setWindowsProxy(true);
