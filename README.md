@@ -1,8 +1,8 @@
-# 🛡️ OpenTunnel: Campus & Enterprise Firewall-Resistant VPN Architecture
+# 🛡️ ChangeIt: Campus & Enterprise Firewall-Resilient Network Client
 
-An end-to-end open-source guide and multi-platform VPN architecture engineered to bypass restrictive institutional, university, and enterprise firewalls (e.g., Fortinet FortiGuard, Palo Alto Networks, Cisco Firepower) by wrapping traffic into standard HTTPS WebSockets over TLS on Port 443.
+An end-to-end open-source guide and multi-platform client engineered to bypass restrictive institutional, university, and enterprise firewalls (e.g., Fortinet FortiGuard, Palo Alto Networks, Cisco Firepower) by wrapping traffic into standard HTTPS WebSockets over TLS on Port 443.
 
-Includes the full **Server Setup Guide**, client configurations for **Windows, Android, and iOS**, plus the **OpenTunnel Desktop** client application codebase.
+Includes the full **Server Setup Guide**, client configurations for **Windows, Android, and iOS**, plus the **ChangeIt Desktop** client application codebase.
 
 ---
 
@@ -14,7 +14,7 @@ Includes the full **Server Setup Guide**, client configurations for **Windows, A
    - [Windows Setup (v2rayN)](#1-windows-desktop-setup)
    - [Android Setup (v2rayNG)](#2-android-mobile-setup)
    - [iOS / iPhone Setup (Streisand / V2Box)](#3-ios--iphone-setup)
-5. [OpenTunnel Desktop Client Architecture](#-opentunnel-desktop-client-architecture)
+5. [ChangeIt Desktop Client Architecture](#-changeit-desktop-client-architecture)
 6. [Security & Privacy Properties](#-security--privacy-properties)
 7. [License](#-license)
 
