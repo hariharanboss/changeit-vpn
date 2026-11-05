@@ -12,6 +12,7 @@ import { ConnectButton } from './components/ConnectButton';
 import { TelemetryCards } from './components/TelemetryCards';
 import { ServerSelector } from './components/ServerSelector';
 import { NetworkDiagnosticModal } from './components/NetworkDiagnosticModal';
+import { StarfieldCanvas } from './components/StarfieldCanvas';
 
 const isElectron = typeof window !== 'undefined' && window.require;
 const electron = isElectron ? window.require('electron') : null;
@@ -104,7 +105,10 @@ export const App: React.FC = () => {
   }, [connectionState, selectedProfile]);
 
   return (
-    <div className="h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-hidden">
+    <div className="h-screen bg-[#07090e] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-hidden">
+      {/* Drifting Cosmic Starfield Background (GalaxyBrain Sci-Fi aesthetic) */}
+      <StarfieldCanvas />
+
       {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
