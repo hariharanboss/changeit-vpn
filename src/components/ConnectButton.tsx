@@ -52,3 +52,4 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({ state, onToggle })
     </div>
   );
 };
+

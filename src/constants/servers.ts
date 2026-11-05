@@ -52,3 +52,4 @@ export const DEFAULT_PROFILES: VpnProfile[] = [
     ping: 88,
   },
 ];
+

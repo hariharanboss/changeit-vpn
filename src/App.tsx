@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Stethoscope, 
   Lock, 
-  Wifi, 
   Terminal,
-  FileCode
+  FileCode,
+  ShieldCheck
 } from 'lucide-react';
 import { DEFAULT_PROFILES } from './constants/servers';
 import { VpnProfile, ConnectionState, TelemetryData } from './types';
@@ -14,10 +14,23 @@ import { ServerSelector } from './components/ServerSelector';
 import { NetworkDiagnosticModal } from './components/NetworkDiagnosticModal';
 
 export const App: React.FC = () => {
-  const [profiles] = useState<VpnProfile[]>(DEFAULT_PROFILES);
-  const [selectedProfile, setSelectedProfile] = useState<VpnProfile>(DEFAULT_PROFILES[0]);
+  const [profiles] = useState<VpnProfile[]>([
+    {
+      id: 'aic-cloud-de',
+      name: 'Germany Node (Stealth-TLS 443)',
+      country: 'Germany',
+      countryCode: 'DE',
+      endpoint: 'i3owy.aiccloud.online',
+      port: 443,
+      protocol: 'Stealth-TLS',
+      ping: 110,
+    },
+    ...DEFAULT_PROFILES
+  ]);
+  const [selectedProfile, setSelectedProfile] = useState<VpnProfile>(profiles[0]);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
+  const [adBlockEnabled, setAdBlockEnabled] = useState(true);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
@@ -29,11 +42,12 @@ export const App: React.FC = () => {
     uploadSpeedMbps: 0,
     latencyMs: selectedProfile.ping,
     uptimeSeconds: 0,
-    publicIp: '185.220.101.45',
+    publicIp: '135.125.222.22',
   });
 
   const [logs, setLogs] = useState<string[]>([
-    '[INIT] OpenTunnel Desktop v1.0.0 (Windows x64)',
+    '[INIT] OpenTunnel Desktop v1.2.0 (Windows x64)',
+    '[ADBLOCK] Server-side AdGuard & Geosite Blackhole Engine active.',
     '[WINTUN] Wintun L3 ring-buffer driver loaded.',
     '[WFP] Windows Filtering Platform kill-switch engine ready.',
     '[DNS] Windows NRPT leak protection subsystem armed.',
@@ -67,8 +81,11 @@ export const App: React.FC = () => {
         if (killSwitchEnabled) {
           addLog('[WFP] Enforcing persistent out-of-tunnel blocking filter.');
         }
-        addLog('[NRPT] Binding wildcard namespace (.) to encrypted tunnel DNS 1.1.1.1.');
-        addLog(`[TUN] Wintun interface established. Session encrypted with ChaCha20-Poly1305.`);
+        if (adBlockEnabled) {
+          addLog('[ADBLOCK] Upstream AdGuard DNS (94.140.14.14) & Blackhole active.');
+        }
+        addLog('[NRPT] Binding wildcard namespace (.) to encrypted tunnel DNS.');
+        addLog(`[TUN] Wintun interface established. Session encrypted with TLS 1.3 / ChaCha20-Poly1305.`);
         setConnectionState('connected');
       }, 1800);
     }
@@ -80,8 +97,8 @@ export const App: React.FC = () => {
 
     const interval = setInterval(() => {
       setTelemetry((prev) => {
-        const dl = parseFloat((Math.random() * 35 + 40).toFixed(1));
-        const ul = parseFloat((Math.random() * 12 + 8).toFixed(1));
+        const dl = parseFloat((Math.random() * 45 + 50).toFixed(1));
+        const ul = parseFloat((Math.random() * 15 + 10).toFixed(1));
         const jitter = Math.floor(Math.random() * 6 - 3);
 
         return {
@@ -110,8 +127,8 @@ export const App: React.FC = () => {
           <div>
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>OpenTunnel Desktop</span>
-              <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.2 rounded font-mono">
-                v1.0.0
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono">
+                v1.2.0 • AdBlock
               </span>
             </h1>
           </div>
@@ -132,7 +149,7 @@ export const App: React.FC = () => {
             className="flex items-center space-x-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#181d28] hover:bg-[#202736] border border-gray-800 text-gray-300 hover:text-white transition-colors"
           >
             <FileCode className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Profile Generator</span>
+            <span>Config / Key</span>
           </button>
         </div>
       </header>
@@ -141,14 +158,14 @@ export const App: React.FC = () => {
       <main className="flex-1 p-6 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Connection & Telemetry */}
         <section className="lg:col-span-7 flex flex-col items-center">
-          {/* Main Big Dial */}
+          {/* Main Dial */}
           <ConnectButton
             state={connectionState}
             onToggle={handleToggleConnection}
           />
 
-          {/* Quick Status Bar */}
-          <div className="w-full mb-4 flex items-center justify-between px-4 py-2 rounded-xl bg-[#131722] border border-gray-800/80 text-xs">
+          {/* Quick Feature Toggles Bar */}
+          <div className="w-full mb-4 flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#131722] border border-gray-800/80 text-xs">
             <div className="flex items-center space-x-2">
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
@@ -160,12 +177,29 @@ export const App: React.FC = () => {
                 }`}
               />
               <span className="text-gray-300">
-                Mode:{' '}
-                <strong className="text-white font-mono">{selectedProfile.protocol}</strong>
+                Mode: <strong className="text-white font-mono">{selectedProfile.protocol}</strong>
               </span>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-5">
+              {/* AdBlocker Switch */}
+              <label className="flex items-center space-x-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={adBlockEnabled}
+                  onChange={(e) => {
+                    setAdBlockEnabled(e.target.checked);
+                    addLog(`AdBlocker ${e.target.checked ? 'Enabled (Blackhole + AdGuard)' : 'Disabled'}`);
+                  }}
+                  className="rounded bg-gray-900 border-gray-700 text-emerald-500 focus:ring-0"
+                />
+                <span className="text-emerald-400 font-medium flex items-center space-x-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>AdBlocker</span>
+                </span>
+              </label>
+
+              {/* Kill Switch */}
               <label className="flex items-center space-x-1.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -215,14 +249,14 @@ export const App: React.FC = () => {
             disabled={connectionState !== 'disconnected'}
           />
 
-          {/* Compatibility Advisor Card */}
-          <div className="bg-[#131722] border border-blue-900/30 rounded-2xl p-4">
-            <h4 className="text-xs font-semibold text-blue-400 uppercase tracking-wide flex items-center space-x-1.5 mb-2">
-              <Wifi className="w-3.5 h-3.5" />
-              <span>Campus / Restrictive Wi-Fi Mode</span>
+          {/* AdBlocker Status Box */}
+          <div className="bg-[#131722] border border-emerald-900/30 rounded-2xl p-4">
+            <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide flex items-center space-x-1.5 mb-2">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Server-Level AdBlock & Malware Shield</span>
             </h4>
             <p className="text-xs text-gray-300 leading-relaxed">
-              If campus firewalls (e.g. FortiGate/Palo Alto) block UDP and reject standard WireGuard handshakes, switch to <strong>Stealth-TLS (Port 443)</strong> or <strong>OpenVPN-TCP</strong>. These wrap tunneling frames inside standard TLS sessions identical to web traffic.
+              Equipped with <strong>Geosite Blackhole routing</strong> and <strong>AdGuard DNS (94.140.14.14)</strong> upstream. Advertisements, analytical trackers, and phishing domains are dropped at the root before reaching your devices.
             </p>
           </div>
         </section>
@@ -239,7 +273,7 @@ export const App: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#121622] border border-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-gray-800">
-              <h3 className="text-sm font-semibold text-white">WireGuard & Stealth Configuration</h3>
+              <h3 className="text-sm font-semibold text-white">Client Key & Connection URL</h3>
               <button
                 onClick={() => setShowConfigModal(false)}
                 className="text-gray-400 hover:text-white"
@@ -247,20 +281,11 @@ export const App: React.FC = () => {
                 ✕
               </button>
             </div>
-            <pre className="mt-4 p-3 bg-black/50 border border-gray-800 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto">
-{`[Interface]
-PrivateKey = aAAA...exampleKey=
-Address = 10.14.0.2/32
-DNS = 1.1.1.1, 1.0.0.1
-
-[Peer]
-PublicKey = bBBB...serverKey=
-Endpoint = ${selectedProfile.endpoint}:${selectedProfile.port}
-AllowedIPs = 0.0.0.0/0, ::/0
-PersistentKeepalive = 25`}
+            <pre className="mt-4 p-3 bg-black/50 border border-gray-800 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all">
+{`vless://<YOUR_RANDOM_UUID>@<YOUR_SERVER_DOMAIN>:443?type=ws&security=tls&path=%2Ftunnel#CampusBypass-AdBlock`}
             </pre>
             <p className="text-xs text-gray-400 mt-3">
-              Standard format compliant with Wintun, official WireGuard for Windows, and OpenTunnel desktop engine.
+              Standard format compliant with v2rayN, v2rayNG, Streisand, and OpenTunnel desktop engine.
             </p>
           </div>
         </div>

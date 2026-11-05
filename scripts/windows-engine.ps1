@@ -42,3 +42,4 @@ function Disable-OpenTunnelDnsProtection {
     Get-DnsClientNrptRule | Where-Object { $_.Namespace -eq "." } | Remove-DnsClientNrptRule -Force -ErrorAction SilentlyContinue | Out-Null
     Write-Host "[NRPT] NRPT rules cleared."
 }
+

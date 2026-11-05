@@ -31,3 +31,4 @@ export interface DiagnosticResult {
   dpiSignatureDetection: 'detected' | 'clean';
   recommendation: string;
 }
+

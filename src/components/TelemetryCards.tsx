@@ -67,3 +67,4 @@ export const TelemetryCards: React.FC<TelemetryCardsProps> = ({ telemetry, isCon
     </div>
   );
 };
+
