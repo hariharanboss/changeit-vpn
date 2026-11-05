@@ -6,6 +6,11 @@ const https = require('https');
 const http = require('http');
 const os = require('os');
 
+// Prevent unexpected electron dialogs on background tasks
+process.on('uncaughtException', (err) => {
+  console.error('ChangeIt Main Exception:', err);
+});
+
 let mainWindow;
 let xrayProcess = null;
 let updateDownloadedPath = null;
@@ -47,7 +52,7 @@ function createWindow() {
     mainWindow.show();
     // Silently check for OTA updates 2 seconds after startup
     setTimeout(() => {
-      checkForAppUpdates();
+      checkForAppUpdates().catch(() => {});
     }, 2000);
   });
 
@@ -183,13 +188,23 @@ function downloadFile(url, destPath) {
         if (res.statusCode !== 200) {
           return reject(new Error(`Download HTTP ${res.statusCode}`));
         }
+
+        const prevNoAsar = process.noAsar;
+        process.noAsar = true;
         const fileStream = fs.createWriteStream(destPath);
+        process.noAsar = prevNoAsar;
+
         res.pipe(fileStream);
         fileStream.on('finish', () => {
           fileStream.close(() => resolve(destPath));
         });
       }).on('error', (err) => {
-        try { fs.unlinkSync(destPath); } catch (_) {}
+        try { 
+          const prev = process.noAsar;
+          process.noAsar = true;
+          fs.unlinkSync(destPath); 
+          process.noAsar = prev;
+        } catch (_) {}
         reject(err);
       });
     }
@@ -235,10 +250,18 @@ async function checkForAppUpdates() {
           if (isNewerVersion(remoteTag, currentVersion)) {
             const asarAsset = (release.assets || []).find(a => a.name === 'app.asar');
             if (asarAsset && asarAsset.browser_download_url) {
-              const tempAsar = path.join(os.tmpdir(), `changeit_update_${remoteTag}.asar`);
-              await downloadFile(asarAsset.browser_download_url, tempAsar);
-              if (fs.existsSync(tempAsar) && fs.statSync(tempAsar).size > 50000) {
-                updateDownloadedPath = tempAsar;
+              // Save with non-asar extension so Electron does not attempt virtual fs parsing
+              const tempUpdate = path.join(os.tmpdir(), `changeit_update_${remoteTag}.pkg`);
+              await downloadFile(asarAsset.browser_download_url, tempUpdate);
+              
+              const prev = process.noAsar;
+              process.noAsar = true;
+              const exists = fs.existsSync(tempUpdate);
+              const validSize = exists && fs.statSync(tempUpdate).size > 50000;
+              process.noAsar = prev;
+
+              if (validSize) {
+                updateDownloadedPath = tempUpdate;
                 newVersionAvailable = remoteTag.replace(/^v/, '');
                 if (mainWindow && !mainWindow.isDestroyed()) {
                   mainWindow.webContents.send('updater:ready', {
@@ -271,7 +294,12 @@ ipcMain.handle('updater:check-now', async () => {
 });
 
 ipcMain.handle('updater:apply', () => {
-  if (!updateDownloadedPath || !fs.existsSync(updateDownloadedPath)) {
+  const prev = process.noAsar;
+  process.noAsar = true;
+  const hasUpdate = updateDownloadedPath && fs.existsSync(updateDownloadedPath);
+  process.noAsar = prev;
+
+  if (!hasUpdate) {
     return { success: false, error: 'No update ready' };
   }
 
