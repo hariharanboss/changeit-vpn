@@ -48,10 +48,12 @@ function createWindow() {
 }
 
 function getXrayPaths() {
+  const exeDir = path.dirname(app.getPath('exe'));
   const possiblePaths = [
-    path.join(__dirname, '../bin/xray'),
-    path.join(process.resourcesPath, 'app/bin/xray'),
+    path.join(exeDir, 'bin/xray'),
+    path.join(process.resourcesPath, '../bin/xray'),
     path.join(process.resourcesPath, 'bin/xray'),
+    path.join(__dirname, '../bin/xray'),
     path.join(app.getAppPath(), 'bin/xray'),
     'C:\\Users\\dhanusha\\.gemini\\antigravity\\scratch\\opentunnel-desktop\\bin\\xray'
   ];
