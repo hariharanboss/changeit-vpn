@@ -3,25 +3,26 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-[#0b0e14] text-gray-200 font-sans;
-    overflow-x: hidden;
+  html, body {
+    @apply bg-[#0a0d14] text-gray-200 font-sans;
+    overflow: hidden; /* Completely eliminates unwanted window scrollbars */
+    height: 100vh;
+    user-select: none;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar for list containers only */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #11141c;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #232936;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: rgba(255, 255, 255, 0.2);
 }
-

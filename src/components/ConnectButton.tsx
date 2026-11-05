@@ -20,7 +20,7 @@ export const ConnectButton: React.FC<ConnectButtonProps> = ({ state, uptimeSecon
   };
 
   return (
-    <div className="flex flex-col items-center justify-center my-8">
+    <div className="flex flex-col items-center justify-center my-3">
       {/* Outer ambient glow circles */}
       <div className="relative flex items-center justify-center">
         {isConnected && (

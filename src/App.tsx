@@ -104,15 +104,15 @@ export const App: React.FC = () => {
   }, [connectionState, selectedProfile]);
 
   return (
-    <div className="min-h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-x-hidden">
+    <div className="h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-hidden">
       {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Top Navbar */}
-      <header className="h-16 px-8 flex items-center justify-between border-b border-white/5 bg-[#0f131d]/60 backdrop-blur-xl sticky top-0 z-40">
+      <header className="h-14 px-8 flex items-center justify-between border-b border-white/5 bg-[#0f131d]/60 backdrop-blur-xl shrink-0 z-40">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
             <Lock className="w-4 h-4 stroke-[2.5]" />
           </div>
           <div>
@@ -138,7 +138,7 @@ export const App: React.FC = () => {
       </header>
 
       {/* Main App Grid */}
-      <main className="flex-1 p-8 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 px-8 py-5 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start overflow-hidden">
         {/* Left Section: Central Dial & Live Telemetry */}
         <section className="lg:col-span-7 flex flex-col items-center">
           
@@ -161,7 +161,7 @@ export const App: React.FC = () => {
           />
 
           {/* Feature Quick-Toggles Pill Bar */}
-          <div className="w-full max-w-md mb-6 flex items-center justify-between px-5 py-3 rounded-2xl bg-[#141824]/70 backdrop-blur-md border border-white/5 text-xs shadow-lg">
+          <div className="w-full max-w-md mb-4 flex items-center justify-between px-5 py-2.5 rounded-2xl bg-[#141824]/70 backdrop-blur-md border border-white/5 text-xs shadow-lg">
             <div className="flex items-center space-x-2">
               <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
               <span className="text-gray-300 text-[11px] font-medium">Protection Features</span>
