@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-electron
-.vite
+release
 *.log
-
+bin/xray/*.exe
+bin/xray/*.dll

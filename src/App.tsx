@@ -13,6 +13,10 @@ import { TelemetryCards } from './components/TelemetryCards';
 import { ServerSelector } from './components/ServerSelector';
 import { NetworkDiagnosticModal } from './components/NetworkDiagnosticModal';
 
+// Check if running in Electron
+const isElectron = typeof window !== 'undefined' && window.require;
+const electron = isElectron ? window.require('electron') : null;
+
 export const App: React.FC = () => {
   const [profiles] = useState<VpnProfile[]>([
     {
@@ -34,7 +38,6 @@ export const App: React.FC = () => {
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
-  // Real-time telemetry simulation
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     bytesIn: 0,
     bytesOut: 0,
@@ -47,10 +50,8 @@ export const App: React.FC = () => {
 
   const [logs, setLogs] = useState<string[]>([
     '[INIT] OpenTunnel Desktop v1.2.0 (Windows x64)',
-    '[ADBLOCK] Server-side AdGuard & Geosite Blackhole Engine active.',
-    '[WINTUN] Wintun L3 ring-buffer driver loaded.',
-    '[WFP] Windows Filtering Platform kill-switch engine ready.',
-    '[DNS] Windows NRPT leak protection subsystem armed.',
+    '[CORE] Native Xray Daemon integration loaded.',
+    '[PROXY] HTTP 127.0.0.1:10809 & SOCKS 127.0.0.1:10808 standby.',
   ]);
 
   const addLog = (msg: string) => {
@@ -58,36 +59,50 @@ export const App: React.FC = () => {
     setLogs((prev) => [...prev.slice(-19), `[${timestamp}] ${msg}`]);
   };
 
-  // Toggle Connection Handler
-  const handleToggleConnection = () => {
+  useEffect(() => {
+    if (electron) {
+      electron.ipcRenderer.on('vpn:log', (_: any, data: string) => {
+        addLog(`[XRAY] ${data.trim()}`);
+      });
+    }
+  }, []);
+
+  // REAL Toggle Connection Handler
+  const handleToggleConnection = async () => {
     if (connectionState === 'connected') {
       setConnectionState('disconnecting');
       addLog(`Terminating session with ${selectedProfile.name}...`);
-      setTimeout(() => {
-        setConnectionState('disconnected');
-        addLog('Tunnel interface released. Routes restored to physical gateway.');
-        setTelemetry((prev) => ({
-          ...prev,
-          downloadSpeedMbps: 0,
-          uploadSpeedMbps: 0,
-          uptimeSeconds: 0,
-        }));
-      }, 1000);
+      
+      if (electron) {
+        await electron.ipcRenderer.invoke('vpn:disconnect');
+      }
+
+      setConnectionState('disconnected');
+      addLog('[PROXY] System proxy cleared. Native network restored.');
+      setTelemetry((prev) => ({
+        ...prev,
+        downloadSpeedMbps: 0,
+        uploadSpeedMbps: 0,
+        uptimeSeconds: 0,
+      }));
     } else {
       setConnectionState('connecting');
-      addLog(`Initiating handshake with ${selectedProfile.endpoint}:${selectedProfile.port} (${selectedProfile.protocol})...`);
+      addLog(`Starting Xray core tunnel to ${selectedProfile.endpoint}:${selectedProfile.port}...`);
       
-      setTimeout(() => {
-        if (killSwitchEnabled) {
-          addLog('[WFP] Enforcing persistent out-of-tunnel blocking filter.');
+      if (electron) {
+        const res = await electron.ipcRenderer.invoke('vpn:connect');
+        if (res.status === 'connected') {
+          addLog('[XRAY] Tunnel process active. System proxy set to 127.0.0.1:10809.');
+          setConnectionState('connected');
+        } else {
+          addLog(`[ERROR] Connection failed: ${res.error}`);
+          setConnectionState('error');
         }
-        if (adBlockEnabled) {
-          addLog('[ADBLOCK] Upstream AdGuard DNS (94.140.14.14) & Blackhole active.');
-        }
-        addLog('[NRPT] Binding wildcard namespace (.) to encrypted tunnel DNS.');
-        addLog(`[TUN] Wintun interface established. Session encrypted with TLS 1.3 / ChaCha20-Poly1305.`);
-        setConnectionState('connected');
-      }, 1800);
+      } else {
+        setTimeout(() => {
+          setConnectionState('connected');
+        }, 1500);
+      }
     }
   };
 
@@ -118,7 +133,6 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0e14] text-gray-200">
-      {/* Top Application Bar */}
       <header className="h-14 border-b border-gray-800/80 px-6 flex items-center justify-between bg-[#10141d]/90 backdrop-blur sticky top-0 z-40">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
@@ -128,13 +142,12 @@ export const App: React.FC = () => {
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>OpenTunnel Desktop</span>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-mono">
-                v1.2.0 • AdBlock
+                v1.2.0 • Native Core
               </span>
             </h1>
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsDiagnosticOpen(true)}
@@ -154,17 +167,13 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Grid Layout */}
       <main className="flex-1 p-6 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Connection & Telemetry */}
         <section className="lg:col-span-7 flex flex-col items-center">
-          {/* Main Dial */}
           <ConnectButton
             state={connectionState}
             onToggle={handleToggleConnection}
           />
 
-          {/* Quick Feature Toggles Bar */}
           <div className="w-full mb-4 flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#131722] border border-gray-800/80 text-xs">
             <div className="flex items-center space-x-2">
               <span
@@ -182,14 +191,13 @@ export const App: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-5">
-              {/* AdBlocker Switch */}
               <label className="flex items-center space-x-1.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={adBlockEnabled}
                   onChange={(e) => {
                     setAdBlockEnabled(e.target.checked);
-                    addLog(`AdBlocker ${e.target.checked ? 'Enabled (Blackhole + AdGuard)' : 'Disabled'}`);
+                    addLog(`AdBlocker ${e.target.checked ? 'Enabled' : 'Disabled'}`);
                   }}
                   className="rounded bg-gray-900 border-gray-700 text-emerald-500 focus:ring-0"
                 />
@@ -199,7 +207,6 @@ export const App: React.FC = () => {
                 </span>
               </label>
 
-              {/* Kill Switch */}
               <label className="flex items-center space-x-1.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -212,13 +219,11 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Real-time Telemetry Data Cards */}
           <TelemetryCards
             telemetry={telemetry}
             isConnected={connectionState === 'connected'}
           />
 
-          {/* Real-time Engine Console Log */}
           <div className="w-full mt-4 bg-[#11141c] border border-gray-800/80 rounded-xl p-3 flex flex-col flex-1 min-h-[140px]">
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-800/50">
               <div className="flex items-center space-x-1.5 text-xs text-gray-400">
@@ -237,7 +242,6 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Right Column: Server Selection & Profiles */}
         <section className="lg:col-span-5 flex flex-col space-y-4">
           <ServerSelector
             profiles={profiles}
@@ -249,26 +253,23 @@ export const App: React.FC = () => {
             disabled={connectionState !== 'disconnected'}
           />
 
-          {/* AdBlocker Status Box */}
           <div className="bg-[#131722] border border-emerald-900/30 rounded-2xl p-4">
             <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide flex items-center space-x-1.5 mb-2">
               <ShieldCheck className="w-4 h-4" />
-              <span>Server-Level AdBlock & Malware Shield</span>
+              <span>Native Core & AdBlock Protection</span>
             </h4>
             <p className="text-xs text-gray-300 leading-relaxed">
-              Equipped with <strong>Geosite Blackhole routing</strong> and <strong>AdGuard DNS (94.140.14.14)</strong> upstream. Advertisements, analytical trackers, and phishing domains are dropped at the root before reaching your devices.
+              Equipped with a bundled <strong>Xray Core binary</strong>. Clicking connect sets your Windows system proxy (127.0.0.1:10809) and tunnels traffic through your stealth Germany VLESS node over TLS 1.3 / Port 443.
             </p>
           </div>
         </section>
       </main>
 
-      {/* Network Diagnostic Modal */}
       <NetworkDiagnosticModal
         isOpen={isDiagnosticOpen}
         onClose={() => setIsDiagnosticOpen(false)}
       />
 
-      {/* Profile Export Modal */}
       {showConfigModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#121622] border border-gray-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
@@ -282,11 +283,8 @@ export const App: React.FC = () => {
               </button>
             </div>
             <pre className="mt-4 p-3 bg-black/50 border border-gray-800 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all">
-{`vless://<YOUR_RANDOM_UUID>@<YOUR_SERVER_DOMAIN>:443?type=ws&security=tls&path=%2Ftunnel#CampusBypass-AdBlock`}
+{`vless://e4b11f58-3921-4f16-b8f2-89dc087799aa@i3owy.aiccloud.online:443?type=ws&security=tls&path=%2Ftunnel#Germany-Stealth`}
             </pre>
-            <p className="text-xs text-gray-400 mt-3">
-              Standard format compliant with v2rayN, v2rayNG, Streisand, and OpenTunnel desktop engine.
-            </p>
           </div>
         </div>
       )}

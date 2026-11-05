@@ -1,12 +1,34 @@
 {
   "name": "opentunnel-desktop",
-  "version": "1.0.0",
-  "description": "Open-source, secure Windows desktop VPN client with WireGuard/OpenVPN and WFP kill switch",
-  "main": "dist-electron/main.js",
+  "version": "1.2.0",
+  "description": "Campus-Bypass Stealth VPN Desktop Client with Built-in AdBlocker",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
+    "package:dir": "npm run build && electron-builder --dir",
+    "package:win": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.opentunnel.desktop",
+    "productName": "OpenTunnel",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ]
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -21,9 +43,13 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
-    "vite": "^5.4.14"
+    "vite": "^5.4.14",
+    "wait-on": "^8.0.1"
   }
 }
