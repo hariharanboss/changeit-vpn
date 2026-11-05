@@ -29,11 +29,17 @@ function createWindow() {
     backgroundColor: '#0a0d14',
     title: 'ChangeIt',
     autoHideMenuBar: true,
+    show: false,             // Prevents white flash and displays instantly when ready
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false,
+      backgroundThrottling: false,
     },
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   const indexPath = path.join(__dirname, '../dist/index.html');
@@ -156,11 +162,8 @@ ipcMain.handle('vpn:fetch-nodes', async () => {
 });
 
 ipcMain.handle('vpn:connect', async () => {
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     try {
-      // Refresh config before connecting if reachable
-      await fetchRemoteNodes();
-
       const paths = getXrayPaths();
       if (!paths) {
         return resolve({ status: 'error', error: 'xray.exe not found' });
