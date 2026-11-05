@@ -1,6 +1,6 @@
 import React from 'react';
 import { VpnProfile } from '../types';
-import { Check, Signal } from 'lucide-react';
+import { Check, Signal, Globe } from 'lucide-react';
 
 interface ServerSelectorProps {
   profiles: VpnProfile[];
@@ -45,7 +45,10 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
               } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <div className="flex items-center space-x-3.5">
-                <span className="text-2xl drop-shadow-sm">{getFlagEmoji(profile.countryCode)}</span>
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center shrink-0">
+                  <Globe className="w-3.5 h-3.5 text-blue-400 mb-0.5" />
+                  <span className="text-[9px] font-bold text-gray-300 font-mono tracking-tight">{profile.countryCode}</span>
+                </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <p className="text-xs font-semibold text-white tracking-wide">{profile.name}</p>
@@ -85,11 +88,3 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
     </div>
   );
 };
-
-function getFlagEmoji(countryCode: string) {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map((char) => 127397 + char.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
-}

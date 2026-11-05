@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stethoscope, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { Stethoscope, CheckCircle2, AlertTriangle, XCircle, RefreshCw, X } from 'lucide-react';
 import { DiagnosticResult } from '../types';
 
 export const NetworkDiagnosticModal: React.FC<{
@@ -43,9 +43,10 @@ export const NetworkDiagnosticModal: React.FC<{
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-sm px-2 py-1"
+            className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-all"
+            aria-label="Close"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 

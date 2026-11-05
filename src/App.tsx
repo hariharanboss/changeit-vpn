@@ -144,7 +144,9 @@ export const App: React.FC = () => {
           
           {/* Active Server Floating Pill Card */}
           <div className="px-5 py-2.5 rounded-2xl bg-[#141824]/80 backdrop-blur-md border border-white/5 flex items-center space-x-3 shadow-lg mb-2">
-            <span className="text-xl">🛡️</span>
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <Shield className="w-4 h-4 stroke-[2.5]" />
+            </div>
             <div className="text-left">
               <p className="text-xs font-semibold text-white">{selectedProfile.name}</p>
               <p className="text-[10px] text-gray-400 font-mono">
