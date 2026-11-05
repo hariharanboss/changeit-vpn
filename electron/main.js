@@ -26,8 +26,8 @@ function setWindowsProxy(enable) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1040,
-    height: 720,
+    width: 480,
+    height: 680,
     resizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -211,7 +211,7 @@ function isNewerVersion(remoteTag, localVer) {
 
 async function checkForAppUpdates() {
   try {
-    let currentVersion = '1.3.1';
+    let currentVersion = '1.3.2';
     try {
       const pkg = require(path.join(__dirname, '../package.json'));
       if (pkg.version) currentVersion = pkg.version;
