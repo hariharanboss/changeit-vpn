@@ -226,7 +226,7 @@ function isNewerVersion(remoteTag, localVer) {
 
 async function checkForAppUpdates() {
   try {
-    let currentVersion = '1.3.2';
+    let currentVersion = '1.3.3';
     try {
       const pkg = require(path.join(__dirname, '../package.json'));
       if (pkg.version) currentVersion = pkg.version;

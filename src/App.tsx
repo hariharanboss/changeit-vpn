@@ -120,23 +120,23 @@ export const App: React.FC = () => {
   }, [connectionState, selectedProfile]);
 
   return (
-    <div className="h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-hidden">
+    <div className="h-screen w-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-hidden select-none">
       {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* OTA Auto-Update Notification Banner */}
       {updateInfo && (
-        <div className="bg-gradient-to-r from-blue-950/95 via-indigo-950/95 to-blue-950/95 border-b border-blue-500/40 px-6 py-2 flex items-center justify-between z-50 animate-in fade-in slide-in-from-top-2 shadow-lg">
+        <div className="bg-gradient-to-r from-blue-950/95 via-indigo-950/95 to-blue-950/95 border-b border-blue-500/40 px-5 py-2 flex items-center justify-between z-50 animate-in fade-in slide-in-from-top-2 shadow-lg shrink-0">
           <div className="flex items-center space-x-2 text-xs text-blue-200">
             <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
-            <span>Over-the-Air Update <strong>v{updateInfo.version}</strong> ready!</span>
+            <span>Update <strong>v{updateInfo.version}</strong> ready!</span>
           </div>
           <button
             onClick={() => electron?.ipcRenderer.invoke('updater:apply')}
             className="px-3 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-medium rounded-lg text-xs transition shadow-sm"
           >
-            Restart to Update
+            Restart to Apply
           </button>
         </div>
       )}
@@ -151,7 +151,7 @@ export const App: React.FC = () => {
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>ChangeIt</span>
               <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
-                v1.3.2
+                v1.3.3
               </span>
             </h1>
           </div>
@@ -166,10 +166,10 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Centered Compact Layout */}
-      <main className="flex-1 px-6 py-4 max-w-sm w-full mx-auto flex flex-col items-center justify-between overflow-y-auto">
+      {/* Main Centered Non-Scrolling Layout */}
+      <main className="flex-1 px-5 py-3 max-w-sm w-full mx-auto flex flex-col items-center justify-between overflow-hidden">
         {/* Active Gateway Pill */}
-        <div className="w-full px-4 py-2 rounded-2xl bg-[#141824]/80 backdrop-blur-md border border-white/5 flex items-center justify-between shadow-lg">
+        <div className="w-full px-4 py-2 rounded-2xl bg-[#141824]/80 backdrop-blur-md border border-white/5 flex items-center justify-between shadow-lg shrink-0">
           <div className="flex items-center space-x-2.5">
             <div className="w-7 h-7 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
               <Shield className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -187,7 +187,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Centered Dial */}
-        <div className="py-2 flex items-center justify-center">
+        <div className="my-auto py-1 flex items-center justify-center shrink-0">
           <ConnectButton
             state={connectionState}
             uptimeSeconds={telemetry.uptimeSeconds}
@@ -196,7 +196,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Protection Features Toggle Bar */}
-        <div className="w-full flex items-center justify-between px-4 py-2 rounded-2xl bg-[#141824]/70 backdrop-blur-md border border-white/5 text-xs shadow-lg">
+        <div className="w-full flex items-center justify-between px-4 py-2 rounded-2xl bg-[#141824]/70 backdrop-blur-md border border-white/5 text-xs shadow-lg shrink-0 mb-2">
           <div className="flex items-center space-x-2">
             <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
             <span className="text-gray-300 text-[11px] font-medium">Protection</span>
@@ -231,7 +231,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Floating Telemetry Cards */}
-        <div className="w-full pb-1">
+        <div className="w-full shrink-0">
           <TelemetryCards
             telemetry={telemetry}
             isConnected={connectionState === 'connected'}
