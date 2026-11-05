@@ -8,7 +8,8 @@ let mainWindow;
 let xrayProcess = null;
 
 // Admin Remote Config URL (Secret Gist)
-const REMOTE_CONFIG_URL = 'https://gist.githubusercontent.com/hariharanboss/15223ea1ed0d4bf97d16d2365777a9be/raw/opentunnel_nodes.json';
+// Obfuscated endpoint sync buffer
+const REMOTE_CONFIG_URL = Buffer.from('aHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9oYXJpaGFyYW5ib3NzLzE1MjIzZWExZWQwZDRiZjk3ZDE2ZDIzNjU3NzdhOWJlL3Jhdy9vcGVudHVubmVsX25vZGVzLmpzb24=', 'base64').toString('utf-8');
 
 function setWindowsProxy(enable) {
   if (enable) {
@@ -102,7 +103,7 @@ function generateXrayConfig(node) {
               port: node.port || 443,
               users: [
                 {
-                  id: node.uuid || 'e4b11f58-3921-4f16-b8f2-89dc087799aa',
+                  id: node.uuid || '',
                   encryption: 'none',
                   level: 0
                 }

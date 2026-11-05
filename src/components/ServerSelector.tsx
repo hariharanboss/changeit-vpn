@@ -64,8 +64,9 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
                       {profile.protocol}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400 font-mono mt-0.5">
-                    {profile.endpoint}:{profile.port}
+                  <p className="text-[10px] text-gray-400 font-mono mt-0.5 flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Encrypted Stealth Relay • Port {profile.port}</span>
                   </p>
                 </div>
               </div>
