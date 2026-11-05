@@ -47,9 +47,13 @@ function getXrayPaths() {
 
   for (const p of possiblePaths) {
     if (fs.existsSync(path.join(p, 'xray.exe'))) {
+      const localCfg = path.join(p, 'config.local.json');
+      const stdCfg = path.join(p, 'config.json');
+      const activeCfg = fs.existsSync(localCfg) ? localCfg : stdCfg;
+
       return {
         xrayExe: path.join(p, 'xray.exe'),
-        configJson: path.join(p, 'config.json'),
+        configJson: activeCfg,
         cwd: p
       };
     }

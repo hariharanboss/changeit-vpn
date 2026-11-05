@@ -5,3 +5,5 @@ release
 *.log
 bin/xray/*.exe
 bin/xray/*.dll
+bin/xray/config.local.json
+*.local.json
