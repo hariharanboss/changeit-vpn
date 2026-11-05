@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
@@ -12,6 +12,8 @@ process.on('uncaughtException', (err) => {
 });
 
 let mainWindow;
+let tray = null;
+let isQuitting = false;
 let xrayProcess = null;
 let updateDownloadedPath = null;
 let newVersionAvailable = null;
@@ -48,6 +50,15 @@ function createWindow() {
     },
   });
 
+  // Intercept the close (X) button to minimize to system tray
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+      return false;
+    }
+  });
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     // Silently check for OTA updates 2 seconds after startup
@@ -58,6 +69,56 @@ function createWindow() {
 
   const indexPath = path.join(__dirname, '../dist/index.html');
   mainWindow.loadFile(indexPath);
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, 'tray.png');
+  const trayIcon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(trayIcon);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show ChangeIt',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit ChangeIt',
+      click: () => {
+        isQuitting = true;
+        setWindowsProxy(false);
+        if (xrayProcess) {
+          xrayProcess.kill();
+          xrayProcess = null;
+        }
+        exec('taskkill /F /IM xray.exe /T', () => {
+          app.quit();
+        });
+      }
+    }
+  ]);
+
+  tray.setToolTip('ChangeIt - Stealth VPN');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('click', () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  tray.on('double-click', () => {
+    mainWindow.show();
+    mainWindow.focus();
+  });
 }
 
 function getXrayPaths() {
@@ -226,7 +287,7 @@ function isNewerVersion(remoteTag, localVer) {
 
 async function checkForAppUpdates() {
   try {
-    let currentVersion = '1.3.3';
+    let currentVersion = '1.3.4';
     try {
       const pkg = require(path.join(__dirname, '../package.json'));
       if (pkg.version) currentVersion = pkg.version;
@@ -303,6 +364,7 @@ ipcMain.handle('updater:apply', () => {
     return { success: false, error: 'No update ready' };
   }
 
+  isQuitting = true;
   const targetAsar = path.join(process.resourcesPath, 'app.asar');
   const batPath = path.join(os.tmpdir(), 'changeit_apply.bat');
   const batContent = `@echo off\r\ntimeout /t 1 /nobreak >nul\r\ncopy /Y "${updateDownloadedPath}" "${targetAsar}"\r\ndel "${updateDownloadedPath}"\r\nstart "" "${process.execPath}"\r\ndel "%~f0"\r\n`;
@@ -357,17 +419,23 @@ ipcMain.handle('vpn:disconnect', async () => {
 
 app.whenReady().then(() => {
   createWindow();
-  // Fetch remote node configuration in background
+  createTray();
   fetchRemoteNodes();
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
 });
 
 app.on('will-quit', () => {
   setWindowsProxy(false);
   if (xrayProcess) xrayProcess.kill();
   exec('taskkill /F /IM xray.exe /T');
+  if (tray) {
+    try { tray.destroy(); } catch (_) {}
+  }
 });
 
 app.on('window-all-closed', () => {
-  setWindowsProxy(false);
-  if (process.platform !== 'darwin') app.quit();
+  // Stay running in the system tray in background
 });
