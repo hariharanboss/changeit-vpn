@@ -1,17 +1,16 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, exec } = require('child_process');
+const fs = require('fs');
 
 let mainWindow;
 let xrayProcess = null;
 
 function setWindowsProxy(enable) {
   if (enable) {
-    // Enable system proxy to localhost:10809 (HTTP) and localhost:10808 (SOCKS)
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f');
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "127.0.0.1:10809" /f');
   } else {
-    // Disable system proxy
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f');
   }
 }
@@ -34,17 +33,43 @@ function createWindow() {
   mainWindow.loadFile(indexPath);
 }
 
-// IPC Handlers for Connection
+// Find xray.exe accurately across dev and packaged modes
+function getXrayPaths() {
+  const possiblePaths = [
+    path.join(__dirname, '../bin/xray'),
+    path.join(process.resourcesPath, 'app/bin/xray'),
+    path.join(process.resourcesPath, 'bin/xray'),
+    path.join(app.getAppPath(), 'bin/xray'),
+    'C:\\Users\\dhanusha\\.gemini\\antigravity\\scratch\\opentunnel-desktop\\bin\\xray'
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(path.join(p, 'xray.exe'))) {
+      return {
+        xrayExe: path.join(p, 'xray.exe'),
+        configJson: path.join(p, 'config.json'),
+        cwd: p
+      };
+    }
+  }
+  return null;
+}
+
 ipcMain.handle('vpn:connect', async () => {
   return new Promise((resolve) => {
     try {
-      const xrayPath = path.join(__dirname, '../bin/xray/xray.exe');
-      const configPath = path.join(__dirname, '../bin/xray/config.json');
+      const paths = getXrayPaths();
+      if (!paths) {
+        return resolve({ status: 'error', error: 'xray.exe not found' });
+      }
 
-      // Spawn native Xray process
-      xrayProcess = spawn(xrayPath, ['run', '-c', configPath], {
-        cwd: path.dirname(xrayPath),
+      xrayProcess = spawn(paths.xrayExe, ['run', '-c', paths.configJson], {
+        cwd: paths.cwd,
         windowsHide: true,
+      });
+
+      xrayProcess.on('error', (err) => {
+        if (mainWindow) mainWindow.webContents.send('vpn:log', `Spawn error: ${err.message}`);
       });
 
       xrayProcess.stdout.on('data', (data) => {
@@ -55,7 +80,6 @@ ipcMain.handle('vpn:connect', async () => {
         if (mainWindow) mainWindow.webContents.send('vpn:log', data.toString());
       });
 
-      // Turn on Windows system proxy
       setWindowsProxy(true);
       resolve({ status: 'connected' });
     } catch (err) {
@@ -66,9 +90,7 @@ ipcMain.handle('vpn:connect', async () => {
 
 ipcMain.handle('vpn:disconnect', async () => {
   return new Promise((resolve) => {
-    // Turn off Windows system proxy
     setWindowsProxy(false);
-
     if (xrayProcess) {
       xrayProcess.kill();
       xrayProcess = null;
