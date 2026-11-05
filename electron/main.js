@@ -3,9 +3,13 @@ const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
+const os = require('os');
 
 let mainWindow;
 let xrayProcess = null;
+let updateDownloadedPath = null;
+let newVersionAvailable = null;
 
 // Admin Remote Config URL (Secret Gist)
 // Obfuscated endpoint sync buffer
@@ -24,13 +28,13 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1040,
     height: 720,
-    resizable: false,        // Disables window resizing
-    maximizable: false,      // Disables the maximize/fullscreen button
-    fullscreenable: false,   // Disables fullscreen mode
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
     backgroundColor: '#0a0d14',
     title: 'ChangeIt',
     autoHideMenuBar: true,
-    show: false,             // Prevents white flash and displays instantly when ready
+    show: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -41,6 +45,10 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    // Silently check for OTA updates 2 seconds after startup
+    setTimeout(() => {
+      checkForAppUpdates();
+    }, 2000);
   });
 
   const indexPath = path.join(__dirname, '../dist/index.html');
@@ -50,12 +58,12 @@ function createWindow() {
 function getXrayPaths() {
   const exeDir = path.dirname(app.getPath('exe'));
   const possiblePaths = [
-    path.join(exeDir, 'bin/xray'),
-    path.join(process.resourcesPath, '../bin/xray'),
-    path.join(process.resourcesPath, 'bin/xray'),
-    path.join(__dirname, '../bin/xray'),
-    path.join(app.getAppPath(), 'bin/xray'),
-    'C:\\Users\\dhanusha\\.gemini\\antigravity\\scratch\\opentunnel-desktop\\bin\\xray'
+    path.join(exeDir, 'bin', 'xray'),
+    path.join(process.resourcesPath, '..', 'bin', 'xray'),
+    path.join(process.resourcesPath, 'bin', 'xray'),
+    path.join(__dirname, '..', 'bin', 'xray'),
+    path.join(app.getAppPath(), 'bin', 'xray'),
+    path.join(app.getAppPath(), '..', 'bin', 'xray')
   ];
 
   for (const p of possiblePaths) {
@@ -159,6 +167,127 @@ async function fetchRemoteNodes() {
     req.on('timeout', () => { req.destroy(); resolve(null); });
   });
 }
+
+function downloadFile(url, destPath) {
+  return new Promise((resolve, reject) => {
+    function get(targetUrl) {
+      const client = targetUrl.startsWith('https') ? https : http;
+      client.get(targetUrl, {
+        headers: {
+          'User-Agent': 'ChangeIt-Desktop-Updater'
+        }
+      }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return get(res.headers.location);
+        }
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Download HTTP ${res.statusCode}`));
+        }
+        const fileStream = fs.createWriteStream(destPath);
+        res.pipe(fileStream);
+        fileStream.on('finish', () => {
+          fileStream.close(() => resolve(destPath));
+        });
+      }).on('error', (err) => {
+        try { fs.unlinkSync(destPath); } catch (_) {}
+        reject(err);
+      });
+    }
+    get(url);
+  });
+}
+
+function isNewerVersion(remoteTag, localVer) {
+  const r = (remoteTag || '').replace(/^v/, '').split('.').map(Number);
+  const l = (localVer || '').replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const remotePart = r[i] || 0;
+    const localPart = l[i] || 0;
+    if (remotePart > localPart) return true;
+    if (remotePart < localPart) return false;
+  }
+  return false;
+}
+
+async function checkForAppUpdates() {
+  try {
+    let currentVersion = '1.3.1';
+    try {
+      const pkg = require(path.join(__dirname, '../package.json'));
+      if (pkg.version) currentVersion = pkg.version;
+    } catch (_) {}
+
+    const releaseApiUrl = 'https://api.github.com/repos/hariharanboss/changeit-vpn/releases/latest';
+
+    https.get(releaseApiUrl, {
+      headers: {
+        'User-Agent': 'ChangeIt-Desktop-Updater',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    }, (res) => {
+      if (res.statusCode !== 200) return;
+      let rawData = '';
+      res.on('data', chunk => rawData += chunk);
+      res.on('end', async () => {
+        try {
+          const release = JSON.parse(rawData);
+          const remoteTag = release.tag_name || '';
+          if (isNewerVersion(remoteTag, currentVersion)) {
+            const asarAsset = (release.assets || []).find(a => a.name === 'app.asar');
+            if (asarAsset && asarAsset.browser_download_url) {
+              const tempAsar = path.join(os.tmpdir(), `changeit_update_${remoteTag}.asar`);
+              await downloadFile(asarAsset.browser_download_url, tempAsar);
+              if (fs.existsSync(tempAsar) && fs.statSync(tempAsar).size > 50000) {
+                updateDownloadedPath = tempAsar;
+                newVersionAvailable = remoteTag.replace(/^v/, '');
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                  mainWindow.webContents.send('updater:ready', {
+                    version: newVersionAvailable,
+                    notes: release.body || ''
+                  });
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      });
+    }).on('error', () => {});
+  } catch (_) {}
+}
+
+ipcMain.handle('updater:get-status', () => {
+  return {
+    ready: !!updateDownloadedPath,
+    version: newVersionAvailable
+  };
+});
+
+ipcMain.handle('updater:check-now', async () => {
+  await checkForAppUpdates();
+  return {
+    ready: !!updateDownloadedPath,
+    version: newVersionAvailable
+  };
+});
+
+ipcMain.handle('updater:apply', () => {
+  if (!updateDownloadedPath || !fs.existsSync(updateDownloadedPath)) {
+    return { success: false, error: 'No update ready' };
+  }
+
+  const targetAsar = path.join(process.resourcesPath, 'app.asar');
+  const batPath = path.join(os.tmpdir(), 'changeit_apply.bat');
+  const batContent = `@echo off\r\ntimeout /t 1 /nobreak >nul\r\ncopy /Y "${updateDownloadedPath}" "${targetAsar}"\r\ndel "${updateDownloadedPath}"\r\nstart "" "${process.execPath}"\r\ndel "%~f0"\r\n`;
+
+  fs.writeFileSync(batPath, batContent);
+  spawn('cmd.exe', ['/c', batPath], {
+    detached: true,
+    stdio: 'ignore'
+  }).unref();
+
+  app.exit(0);
+  return { success: true };
+});
 
 ipcMain.handle('vpn:fetch-nodes', async () => {
   return fetchRemoteNodes();

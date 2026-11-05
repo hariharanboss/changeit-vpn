@@ -3,13 +3,15 @@ import {
   Shield, 
   ShieldCheck, 
   SlidersHorizontal, 
-  Lock 
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { DEFAULT_PROFILES } from './constants/servers';
 import { VpnProfile, ConnectionState, TelemetryData } from './types';
 import { ConnectButton } from './components/ConnectButton';
 import { TelemetryCards } from './components/TelemetryCards';
 import { ServerSelector } from './components/ServerSelector';
+
 const isElectron = typeof window !== 'undefined' && window.require;
 const electron = isElectron ? window.require('electron') : null;
 
@@ -19,6 +21,7 @@ export const App: React.FC = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string } | null>(null);
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     bytesIn: 0,
     bytesOut: 0,
@@ -31,12 +34,32 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (electron) {
+      // 1. Fetch remote nodes
       electron.ipcRenderer.invoke('vpn:fetch-nodes').then((remoteNodes: VpnProfile[] | null) => {
         if (remoteNodes && remoteNodes.length > 0) {
           setProfiles(remoteNodes);
           setSelectedProfile(remoteNodes[0]);
         }
       }).catch(() => {});
+
+      // 2. Check initial updater status
+      electron.ipcRenderer.invoke('updater:get-status').then((res: { ready: boolean; version: string } | null) => {
+        if (res && res.ready) {
+          setUpdateInfo({ version: res.version });
+        }
+      }).catch(() => {});
+
+      // 3. Listen for OTA update download completion
+      const handleUpdateReady = (_event: any, data: { version: string }) => {
+        if (data && data.version) {
+          setUpdateInfo({ version: data.version });
+        }
+      };
+
+      electron.ipcRenderer.on('updater:ready', handleUpdateReady);
+      return () => {
+        electron.ipcRenderer.removeListener('updater:ready', handleUpdateReady);
+      };
     }
   }, []);
 
@@ -103,6 +126,22 @@ export const App: React.FC = () => {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
+      {/* OTA Auto-Update Notification Banner */}
+      {updateInfo && (
+        <div className="bg-gradient-to-r from-blue-950/95 via-indigo-950/95 to-blue-950/95 border-b border-blue-500/40 px-8 py-2 flex items-center justify-between z-50 animate-in fade-in slide-in-from-top-2 shadow-lg">
+          <div className="flex items-center space-x-2 text-xs text-blue-200">
+            <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
+            <span>Over-the-Air Update <strong>v{updateInfo.version}</strong> is ready to apply!</span>
+          </div>
+          <button
+            onClick={() => electron?.ipcRenderer.invoke('updater:apply')}
+            className="px-3.5 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-medium rounded-lg text-xs transition shadow-sm"
+          >
+            Restart to Update
+          </button>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <header className="h-14 px-8 flex items-center justify-between border-b border-white/5 bg-[#0f131d]/60 backdrop-blur-xl shrink-0 z-40">
         <div className="flex items-center space-x-3">
@@ -113,7 +152,7 @@ export const App: React.FC = () => {
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>ChangeIt</span>
               <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
-                v1.3.0
+                v1.3.1
               </span>
             </h1>
           </div>
