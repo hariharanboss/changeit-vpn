@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Stethoscope, 
-  Terminal,
-  FileCode,
-  Shield,
-  ShieldCheck,
-  ChevronDown,
-  ChevronUp,
-  SlidersHorizontal,
-  Lock
+  Shield, 
+  ShieldCheck, 
+  SlidersHorizontal, 
+  Lock 
 } from 'lucide-react';
 import { DEFAULT_PROFILES } from './constants/servers';
 import { VpnProfile, ConnectionState, TelemetryData } from './types';
@@ -23,14 +19,14 @@ const electron = isElectron ? window.require('electron') : null;
 export const App: React.FC = () => {
   const [profiles] = useState<VpnProfile[]>([
     {
-      id: 'aic-cloud-de',
-      name: 'Germany (Frankfurt Central)',
+      id: 'default-stealth-node',
+      name: 'Primary Stealth Gateway',
       country: 'Germany',
       countryCode: 'DE',
-      endpoint: 'i3owy.aiccloud.online',
+      endpoint: 'gateway.opentunnel.net',
       port: 443,
       protocol: 'Stealth-TLS',
-      ping: 98,
+      ping: 85,
     },
     ...DEFAULT_PROFILES
   ]);
@@ -39,8 +35,6 @@ export const App: React.FC = () => {
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [showConsole, setShowConsole] = useState(false);
 
   const [telemetry, setTelemetry] = useState<TelemetryData>({
     bytesIn: 0,
@@ -49,39 +43,18 @@ export const App: React.FC = () => {
     uploadSpeedMbps: 0,
     latencyMs: selectedProfile.ping,
     uptimeSeconds: 0,
-    publicIp: '135.125.222.22',
+    publicIp: 'Protected',
   });
-
-  const [logs, setLogs] = useState<string[]>([
-    '[INIT] OpenTunnel Vinapp v1.3.0',
-    '[CORE] Native Xray Daemon integration loaded.',
-    '[ADBLOCK] Upstream AdGuard DNS (94.140.14.14) & Geosite Blackhole Armed.',
-  ]);
-
-  const addLog = (msg: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs((prev) => [...prev.slice(-19), `[${timestamp}] ${msg}`]);
-  };
-
-  useEffect(() => {
-    if (electron) {
-      electron.ipcRenderer.on('vpn:log', (_: any, data: string) => {
-        addLog(`[XRAY] ${data.trim()}`);
-      });
-    }
-  }, []);
 
   const handleToggleConnection = async () => {
     if (connectionState === 'connected') {
       setConnectionState('disconnecting');
-      addLog(`Disconnecting from ${selectedProfile.name}...`);
       
       if (electron) {
         await electron.ipcRenderer.invoke('vpn:disconnect');
       }
 
       setConnectionState('disconnected');
-      addLog('Tunnel closed. System proxy cleared.');
       setTelemetry((prev) => ({
         ...prev,
         downloadSpeedMbps: 0,
@@ -90,15 +63,12 @@ export const App: React.FC = () => {
       }));
     } else {
       setConnectionState('connecting');
-      addLog(`Initiating stealth handshake with ${selectedProfile.endpoint}:${selectedProfile.port}...`);
       
       if (electron) {
         const res = await electron.ipcRenderer.invoke('vpn:connect');
         if (res.status === 'connected') {
-          addLog('[XRAY] Tunnel active. Proxy routed to 127.0.0.1:10809.');
           setConnectionState('connected');
         } else {
-          addLog(`[ERROR] Connection failed: ${res.error}`);
           setConnectionState('error');
         }
       } else {
@@ -135,7 +105,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0d14] text-gray-200 flex flex-col font-sans selection:bg-blue-600/30 selection:text-white relative overflow-x-hidden">
-      {/* Background soft ambient glows */}
+      {/* Background ambient lighting */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -164,14 +134,6 @@ export const App: React.FC = () => {
             <Stethoscope className="w-3.5 h-3.5 text-blue-400" />
             <span>Firewall Probe</span>
           </button>
-
-          <button
-            onClick={() => setShowConfigModal(true)}
-            className="flex items-center space-x-1.5 text-xs px-3.5 py-1.5 rounded-xl bg-[#141824]/80 hover:bg-[#1a2030] border border-white/5 text-gray-300 hover:text-white transition-all shadow-sm"
-          >
-            <FileCode className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Client Key</span>
-          </button>
         </div>
       </header>
 
@@ -182,16 +144,16 @@ export const App: React.FC = () => {
           
           {/* Active Server Floating Pill Card */}
           <div className="px-5 py-2.5 rounded-2xl bg-[#141824]/80 backdrop-blur-md border border-white/5 flex items-center space-x-3 shadow-lg mb-2">
-            <span className="text-xl">🇩🇪</span>
+            <span className="text-xl">🛡️</span>
             <div className="text-left">
               <p className="text-xs font-semibold text-white">{selectedProfile.name}</p>
               <p className="text-[10px] text-gray-400 font-mono">
-                {selectedProfile.endpoint} • <span className="text-emerald-400 font-medium">98ms</span>
+                {selectedProfile.protocol} • <span className="text-emerald-400 font-medium">{selectedProfile.ping}ms</span>
               </p>
             </div>
           </div>
 
-          {/* Vinapp Big Dial */}
+          {/* Big Dial */}
           <ConnectButton
             state={connectionState}
             uptimeSeconds={telemetry.uptimeSeconds}
@@ -202,7 +164,7 @@ export const App: React.FC = () => {
           <div className="w-full max-w-md mb-6 flex items-center justify-between px-5 py-3 rounded-2xl bg-[#141824]/70 backdrop-blur-md border border-white/5 text-xs shadow-lg">
             <div className="flex items-center space-x-2">
               <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-gray-300 text-[11px] font-medium">Tunnel Features</span>
+              <span className="text-gray-300 text-[11px] font-medium">Protection Features</span>
             </div>
 
             <div className="flex items-center space-x-5">
@@ -211,10 +173,7 @@ export const App: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={adBlockEnabled}
-                  onChange={(e) => {
-                    setAdBlockEnabled(e.target.checked);
-                    addLog(`AdBlocker ${e.target.checked ? 'Armed' : 'Disabled'}`);
-                  }}
+                  onChange={(e) => setAdBlockEnabled(e.target.checked)}
                   className="rounded-full bg-gray-900 border-white/10 text-emerald-500 focus:ring-0 cursor-pointer"
                 />
                 <span className="text-emerald-400 font-semibold text-[11px] flex items-center space-x-1">
@@ -241,30 +200,6 @@ export const App: React.FC = () => {
             telemetry={telemetry}
             isConnected={connectionState === 'connected'}
           />
-
-          {/* Collapsible Console Drawer */}
-          <div className="w-full max-w-md mt-6 bg-[#141824]/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden transition-all">
-            <button
-              onClick={() => setShowConsole(!showConsole)}
-              className="w-full px-4 py-2.5 flex items-center justify-between text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              <div className="flex items-center space-x-2">
-                <Terminal className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[11px] font-mono">Live Engine Diagnostics</span>
-              </div>
-              {showConsole ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-
-            {showConsole && (
-              <div className="p-3 border-t border-white/5 bg-[#0b0e14]/90 max-h-36 overflow-y-auto space-y-1 font-mono text-[10px] text-gray-400">
-                {logs.map((log, idx) => (
-                  <div key={idx} className="leading-relaxed">
-                    {log}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </section>
 
         {/* Right Section: Node Selector & Security Card */}
@@ -272,10 +207,7 @@ export const App: React.FC = () => {
           <ServerSelector
             profiles={profiles}
             selectedProfile={selectedProfile}
-            onSelect={(p) => {
-              setSelectedProfile(p);
-              addLog(`Target node changed to ${p.name}`);
-            }}
+            onSelect={(p) => setSelectedProfile(p)}
             disabled={connectionState !== 'disconnected'}
           />
 
@@ -304,29 +236,6 @@ export const App: React.FC = () => {
         isOpen={isDiagnosticOpen}
         onClose={() => setIsDiagnosticOpen(false)}
       />
-
-      {/* Client Key Modal */}
-      {showConfigModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#141824] border border-white/10 rounded-3xl w-full max-w-lg p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Client Access Key</h3>
-              <button
-                onClick={() => setShowConfigModal(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-            <pre className="mt-4 p-3.5 bg-black/60 border border-white/5 rounded-2xl text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap break-all">
-{`vless://e4b11f58-3921-4f16-b8f2-89dc087799aa@i3owy.aiccloud.online:443?type=ws&security=tls&path=%2Ftunnel#Germany-Stealth`}
-            </pre>
-            <p className="text-xs text-gray-400 mt-3">
-              Direct access key compatible with v2rayN, v2rayNG, and Streisand.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

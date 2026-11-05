@@ -1,6 +1,6 @@
 {
   "log": {
-    "loglevel": "warning"
+    "loglevel": "none"
   },
   "inbounds": [
     {
@@ -35,11 +35,11 @@
       "settings": {
         "vnext": [
           {
-            "address": "i3owy.aiccloud.online",
+            "address": "<YOUR_SERVER_DOMAIN>",
             "port": 443,
             "users": [
               {
-                "id": "e4b11f58-3921-4f16-b8f2-89dc087799aa",
+                "id": "<YOUR_RANDOM_UUID>",
                 "encryption": "none",
                 "level": 0
               }
@@ -61,4 +61,3 @@
     }
   ]
 }
-
