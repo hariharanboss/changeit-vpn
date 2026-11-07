@@ -3,7 +3,6 @@ import {
   Shield, 
   ShieldCheck, 
   SlidersHorizontal, 
-  Lock,
   Sparkles
 } from 'lucide-react';
 import { DEFAULT_PROFILES } from './constants/servers';
@@ -144,9 +143,11 @@ export const App: React.FC = () => {
       {/* Top Navbar */}
       <header className="h-14 px-6 flex items-center justify-between border-b border-white/5 bg-[#0f131d]/60 backdrop-blur-xl shrink-0 z-40">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-            <Lock className="w-4 h-4 stroke-[2.5]" />
-          </div>
+          <img 
+            src="/icon.png" 
+            alt="ChangeIt" 
+            className="w-8 h-8 rounded-xl object-cover shadow-lg shadow-blue-500/20 border border-white/10" 
+          />
           <div>
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>ChangeIt</span>

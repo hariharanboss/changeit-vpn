@@ -70,6 +70,7 @@ function createWindow() {
     fullscreenable: false,
     backgroundColor: '#0a0d14',
     title: 'ChangeIt',
+    icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

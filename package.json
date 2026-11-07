@@ -3,6 +3,35 @@
   "version": "1.4.9",
   "description": "ChangeIt - Firewall-Resilient Stealth Network Client",
   "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
+    "package:dir": "npm run build && electron-builder --dir",
+    "package:win": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.changeit.desktop",
+    "productName": "ChangeIt",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "dir",
+      "icon": "build/icon.ico",
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ]
+  },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
     "clsx": "^2.1.1",
@@ -10,5 +39,20 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.14",
+    "wait-on": "^8.0.1"
   }
 }
