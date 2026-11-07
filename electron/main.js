@@ -196,6 +196,17 @@ function generateXrayConfig(node) {
         listen: '127.0.0.1',
         protocol: 'http',
         sniffing: { enabled: true, destOverride: ['http', 'tls'] }
+      },
+      {
+        tag: 'ssh-tunnel',
+        port: 20091,
+        listen: '127.0.0.1',
+        protocol: 'dokodemo-door',
+        settings: {
+          address: '127.0.0.1',
+          port: 22,
+          network: 'tcp'
+        }
       }
     ],
     outbounds: [
@@ -235,12 +246,22 @@ function generateXrayConfig(node) {
       rules: [
         {
           type: 'field',
-          port: getBypassPorts(),
+          inboundTag: ['ssh-tunnel'],
+          outboundTag: 'proxy'
+        },
+        {
+          type: 'field',
+          port: '22,2222',
           outboundTag: 'direct'
         },
         {
           type: 'field',
-          ip: getBypassIps(),
+          ip: [
+            '10.0.0.0/8',
+            '172.16.0.0/12',
+            '192.168.0.0/16',
+            '127.0.0.0/8'
+          ],
           outboundTag: 'direct'
         }
       ]
