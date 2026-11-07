@@ -26,6 +26,7 @@ function setWindowsProxy(enable) {
   if (enable) {
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f');
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "127.0.0.1:10809" /f');
+    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyOverride /t REG_SZ /d "<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*" /f');
   } else {
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f');
   }
@@ -199,7 +200,27 @@ function generateXrayConfig(node) {
         tag: 'direct',
         protocol: 'freedom'
       }
-    ]
+    ],
+    routing: {
+      domainStrategy: 'IPIfNonMatch',
+      rules: [
+        {
+          type: 'field',
+          port: '22,2222',
+          outboundTag: 'direct'
+        },
+        {
+          type: 'field',
+          ip: [
+            '10.0.0.0/8',
+            '172.16.0.0/12',
+            '192.168.0.0/16',
+            '127.0.0.0/8'
+          ],
+          outboundTag: 'direct'
+        }
+      ]
+    }
   };
 }
 
