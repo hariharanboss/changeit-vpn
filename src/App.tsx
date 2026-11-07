@@ -151,7 +151,7 @@ export const App: React.FC = () => {
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>ChangeIt</span>
               <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
-                v1.4.7
+                v1.4.8
               </span>
             </h1>
           </div>

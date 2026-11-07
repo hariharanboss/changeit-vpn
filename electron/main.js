@@ -22,11 +22,40 @@ let newVersionAvailable = null;
 // Obfuscated endpoint sync buffer
 const REMOTE_CONFIG_URL = Buffer.from('aHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9oYXJpaGFyYW5ib3NzLzE1MjIzZWExZWQwZDRiZjk3ZDE2ZDIzNjU3NzdhOWJlL3Jhdy9vcGVudHVubmVsX25vZGVzLmpzb24=', 'base64').toString('utf-8');
 
+function getBypassIps() {
+  const defaultIps = ['135.125.222.22', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
+  try {
+    const userBypassFile = path.join(app.getPath('userData'), 'bypass.json');
+    if (fs.existsSync(userBypassFile)) {
+      const custom = JSON.parse(fs.readFileSync(userBypassFile, 'utf-8'));
+      if (Array.isArray(custom.ips)) {
+        return [...defaultIps, ...custom.ips];
+      }
+    }
+  } catch (_) {}
+  return defaultIps;
+}
+
+function getBypassPorts() {
+  const defaultPorts = '22,2222,20091';
+  try {
+    const userBypassFile = path.join(app.getPath('userData'), 'bypass.json');
+    if (fs.existsSync(userBypassFile)) {
+      const custom = JSON.parse(fs.readFileSync(userBypassFile, 'utf-8'));
+      if (custom.ports) {
+        return `${defaultPorts},${custom.ports}`;
+      }
+    }
+  } catch (_) {}
+  return defaultPorts;
+}
+
 function setWindowsProxy(enable) {
   if (enable) {
+    const overrideList = '<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*;135.125.222.22';
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f');
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "127.0.0.1:10809" /f');
-    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyOverride /t REG_SZ /d "<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*" /f');
+    exec(`reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyOverride /t REG_SZ /d "${overrideList}" /f`);
   } else {
     exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f');
   }
@@ -206,17 +235,12 @@ function generateXrayConfig(node) {
       rules: [
         {
           type: 'field',
-          port: '22,2222',
+          port: getBypassPorts(),
           outboundTag: 'direct'
         },
         {
           type: 'field',
-          ip: [
-            '10.0.0.0/8',
-            '172.16.0.0/12',
-            '192.168.0.0/16',
-            '127.0.0.0/8'
-          ],
+          ip: getBypassIps(),
           outboundTag: 'direct'
         }
       ]
