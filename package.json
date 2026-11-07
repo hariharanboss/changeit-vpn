@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
     "package:dir": "npm run build && electron-builder --dir",
-    "package:win": "npm run build && electron-builder --win"
+    "package:win": "npm run build && electron-builder --win",
+    "release:ota": "powershell -ExecutionPolicy Bypass -File ./scripts/publish-ota.ps1"
   },
   "build": {
     "appId": "com.changeit.desktop",
