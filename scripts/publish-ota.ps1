@@ -37,6 +37,12 @@ if (Test-Path "D:\Downloads (Chrome)\ChangeIt-v1.4.7-Windows-x64\resources") {
     Write-Host ">>> [OTA] Local test instance updated!" -ForegroundColor Green
 }
 
+# Ensure ChangeIt.exe has the latest icon embedded
+$rcedit = "C:\Users\dhanusha\AppData\Local\electron-builder\Cache\winCodeSign\425303339\rcedit-x64.exe"
+if (Test-Path $rcedit) {
+    & $rcedit "release\win-unpacked\ChangeIt.exe" --set-icon "build\icon.ico" 2>$null
+}
+
 # 3. Create zip package
 $zipPath = "release\ChangeIt-v$Version-Windows-x64.zip"
 Write-Host ">>> [OTA] Compressing $zipPath..." -ForegroundColor Yellow
