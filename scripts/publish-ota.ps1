@@ -24,6 +24,9 @@ New-Item -ItemType Directory -Force -Path $staging | Out-Null
 Copy-Item "dist" "$staging\dist" -Recurse -Force
 Copy-Item "electron" "$staging\electron" -Recurse -Force
 Copy-Item "package.json" "$staging\package.json" -Force
+if (Test-Path "config.endpoint.json") {
+    Copy-Item "config.endpoint.json" "$staging\config.endpoint.json" -Force
+}
 
 New-Item -ItemType Directory -Force -Path "release\win-unpacked\resources" | Out-Null
 npx asar pack $staging release\win-unpacked\resources\app.asar

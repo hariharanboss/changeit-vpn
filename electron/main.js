@@ -18,12 +18,28 @@ let xrayProcess = null;
 let updateDownloadedPath = null;
 let newVersionAvailable = null;
 
-// Admin Remote Config URL (Secret Gist)
-// Obfuscated endpoint sync buffer
-const REMOTE_CONFIG_URL = Buffer.from('aHR0cHM6Ly9naXN0LmdpdGh1YnVzZXJjb250ZW50LmNvbS9oYXJpaGFyYW5ib3NzLzE1MjIzZWExZWQwZDRiZjk3ZDE2ZDIzNjU3NzdhOWJlL3Jhdy9vcGVudHVubmVsX25vZGVzLmpzb24=', 'base64').toString('utf-8');
+// Dynamic Remote Config URL (reads from local config.endpoint.json or CHANGEIT_CONFIG_URL env var)
+function getRemoteConfigUrl() {
+  if (process.env.CHANGEIT_CONFIG_URL) return process.env.CHANGEIT_CONFIG_URL;
+  try {
+    const candidatePaths = [
+      path.join(__dirname, '..', 'config.endpoint.json'),
+      path.join(process.resourcesPath, 'config.endpoint.json'),
+      path.join(path.dirname(app.getPath('exe')), 'config.endpoint.json'),
+      path.join(app.getPath('userData'), 'config.endpoint.json')
+    ];
+    for (const epPath of candidatePaths) {
+      if (fs.existsSync(epPath)) {
+        const cfg = JSON.parse(fs.readFileSync(epPath, 'utf-8'));
+        if (cfg && cfg.url) return cfg.url;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
 
 function getBypassIps() {
-  const defaultIps = ['135.125.222.22', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
+  const defaultIps = ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8'];
   try {
     const userBypassFile = path.join(app.getPath('userData'), 'bypass.json');
     if (fs.existsSync(userBypassFile)) {
@@ -272,7 +288,10 @@ function generateXrayConfig(node) {
 
 async function fetchRemoteNodes() {
   return new Promise((resolve) => {
-    const req = https.get(REMOTE_CONFIG_URL, { timeout: 4000 }, (res) => {
+    const configUrl = getRemoteConfigUrl();
+    if (!configUrl) return resolve(null);
+
+    const req = https.get(configUrl, { timeout: 4000 }, (res) => {
       if (res.statusCode !== 200) return resolve(null);
       let rawData = '';
       res.on('data', (chunk) => { rawData += chunk; });
