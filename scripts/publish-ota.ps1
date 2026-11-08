@@ -43,6 +43,11 @@ if (Test-Path $rcedit) {
     & $rcedit "release\win-unpacked\ChangeIt.exe" --set-icon "build\icon.ico" 2>$null
 }
 
+# Ensure bin directory (xray, wintun, etc.) is included in release
+if (Test-Path "bin") {
+    Copy-Item "bin" "release\win-unpacked\bin" -Recurse -Force
+}
+
 # 3. Create zip package
 $zipPath = "release\ChangeIt-v$Version-Windows-x64.zip"
 Write-Host ">>> [OTA] Compressing $zipPath..." -ForegroundColor Yellow

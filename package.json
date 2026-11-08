@@ -31,6 +31,12 @@
     "files": [
       "dist/**/*",
       "electron/**/*"
+    ],
+    "extraFiles": [
+      {
+        "from": "bin",
+        "to": "bin"
+      }
     ]
   },
   "dependencies": {
