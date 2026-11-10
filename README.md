@@ -14,8 +14,8 @@
 
 | Platform | Download Link | Description | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Android (arm64)** | [📥 **ChangeIt-arm64.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-arm64.apk) | Recommended for modern Android phones (v1.5.5) | ARM64 (64-bit) |
-| **Android (Universal)** | [📥 **ChangeIt-Universal.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-Universal.apk) | Compatible with all Android devices | Universal |
+| **Android (arm64)** | [📥 **ChangeIt-arm64.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-arm64.apk) | Recommended for modern Android phones (v1.5.6) | ARM64 (64-bit) |
+| **Android (Universal)** | [📥 **ChangeIt-Universal.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-Universal.apk) | Compatible with all Android devices | Universal |
 | **Windows Desktop** | [📥 **ChangeIt-v1.5.6-Windows-x64.zip**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-v1.5.6-Windows-x64.zip) | Portable Windows app — extract and run `ChangeIt.exe` | Windows x64 |
 | **OTA Hot-Reload** | [📥 **app.asar**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/app.asar) | Lightweight (~1.9 MB) hot-patch package | Cross-platform |
 
@@ -65,7 +65,7 @@ Standard VPN protocols fail on institutional firewalls because their signatures 
 
 ## 📱 Mobile App Setup (Android)
 
-1. **Install APK**: Download [`ChangeIt-arm64.apk`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-arm64.apk) and install it on your device.
+1. **Install APK**: Download [`ChangeIt-arm64.apk`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-arm64.apk) and install it on your device.
 2. **Launch & Connect**:
    - Open **ChangeIt**.
    - Tap the central connect button.
