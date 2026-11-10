@@ -61,12 +61,20 @@ if (Test-Path "bin") {
 }
 
 # 3. Create zip package
+# Compress-Archive intermittently fails on freshly written files ("being used by
+# another process"); ZipFile reads the same files reliably.
 $zipPath = "release\ChangeIt-v$Version-Windows-x64.zip"
+if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
 Write-Host ">>> [OTA] Compressing $zipPath..." -ForegroundColor Yellow
-Compress-Archive -Path "release\win-unpacked\*" -DestinationPath $zipPath -Force
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::CreateFromDirectory(
+    (Resolve-Path "release\win-unpacked").Path,
+    (Join-Path (Resolve-Path "release").Path "ChangeIt-v$Version-Windows-x64.zip"),
+    [System.IO.Compression.CompressionLevel]::Optimal,
+    $false
+)
 
 # Verify the archive really contains a runnable core before publishing it.
-Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zipPath))
 $entries = $zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' }
 $zip.Dispose()
