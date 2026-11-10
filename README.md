@@ -16,8 +16,8 @@
 | :--- | :--- | :--- | :--- |
 | **Android (arm64)** | [📥 **ChangeIt-arm64.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-arm64.apk) | Recommended for modern Android phones (v1.5.5) | ARM64 (64-bit) |
 | **Android (Universal)** | [📥 **ChangeIt-Universal.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-Universal.apk) | Compatible with all Android devices | Universal |
-| **Windows Desktop** | [📥 **ChangeIt-v1.5.5-Windows-x64.zip**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-v1.5.5-Windows-x64.zip) | Portable Windows app — extract and run `ChangeIt.exe` | Windows x64 |
-| **OTA Hot-Reload** | [📥 **app.asar**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/app.asar) | Lightweight (~1.9 MB) hot-patch package | Cross-platform |
+| **Windows Desktop** | [📥 **ChangeIt-v1.5.6-Windows-x64.zip**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-v1.5.6-Windows-x64.zip) | Portable Windows app — extract and run `ChangeIt.exe` | Windows x64 |
+| **OTA Hot-Reload** | [📥 **app.asar**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/app.asar) | Lightweight (~1.9 MB) hot-patch package | Cross-platform |
 
 ---
 
@@ -76,9 +76,15 @@ Standard VPN protocols fail on institutional firewalls because their signatures 
 
 ## 💻 Desktop App Setup (Windows)
 
-1. **Download & Extract**: Download [`ChangeIt-v1.5.5-Windows-x64.zip`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.5/ChangeIt-v1.5.5-Windows-x64.zip) and extract it to any folder.
+1. **Download & Extract**: Download [`ChangeIt-v1.5.6-Windows-x64.zip`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-v1.5.6-Windows-x64.zip) and extract it to any folder.
 2. **Run**: Launch `ChangeIt.exe`.
-3. **Connect**: Click **Connect**. The system tray icon will indicate active tunnel state.
+3. **Connect**: Click **Connect**. The app verifies the tunnel before showing "Connected"; on failure it shows the reason and restores your internet settings.
+
+### Windows troubleshooting
+- Always install from the **full Windows zip**. `app.asar` is an in-app hot-patch only and cannot supply the tunnel core.
+- If Connect fails, use **Re-check → Details** in the app for the exact cause and **Open logs** for `%APPDATA%\ChangeIt\logs\xray.log`.
+- Antivirus blocking `xray.exe`: add an exclusion for the extracted ChangeIt folder.
+- "Port 10808/10809 already in use": close other VPN/proxy clients and any second ChangeIt window.
 
 ### Running Desktop from Source:
 ```bash

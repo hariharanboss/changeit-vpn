@@ -12,6 +12,14 @@ if (-not $Version) {
 
 Write-Host ">>> [OTA] Starting automated OTA build & release for v$Version..." -ForegroundColor Cyan
 
+# A release without the tunnel core is unusable on a fresh machine. Fail loudly.
+if (-not (Test-Path "bin\xray\xray.exe")) {
+    throw "bin\xray\xray.exe is missing - refusing to build a release the tunnel core cannot run from."
+}
+if (-not (Test-Path "bin\xray\config.local.json")) {
+    throw "bin\xray\config.local.json is missing - the packaged app would have no server config."
+}
+
 # 1. Build frontend
 Write-Host ">>> [OTA] Building Vite & TypeScript..." -ForegroundColor Yellow
 npm run build
@@ -48,13 +56,26 @@ if (Test-Path $rcedit) {
 
 # Ensure bin directory (xray, wintun, etc.) is included in release
 if (Test-Path "bin") {
-    Copy-Item "bin" "release\win-unpacked\bin" -Recurse -Force
+    New-Item -ItemType Directory -Force -Path "release\win-unpacked\bin" | Out-Null
+    Copy-Item "bin\*" "release\win-unpacked\bin" -Recurse -Force
 }
 
 # 3. Create zip package
 $zipPath = "release\ChangeIt-v$Version-Windows-x64.zip"
 Write-Host ">>> [OTA] Compressing $zipPath..." -ForegroundColor Yellow
 Compress-Archive -Path "release\win-unpacked\*" -DestinationPath $zipPath -Force
+
+# Verify the archive really contains a runnable core before publishing it.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zipPath))
+$entries = $zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' }
+$zip.Dispose()
+foreach ($required in @('bin/xray/xray.exe', 'bin/xray/config.local.json', 'ChangeIt.exe', 'resources/app.asar')) {
+    if (-not ($entries -contains $required)) {
+        throw "Release zip is missing $required - aborting publish."
+    }
+}
+Write-Host ">>> [OTA] Zip verification passed (core, config, exe, asar present)." -ForegroundColor Green
 
 # 4. Upload to GitHub Releases
 $tag = "v$Version"
@@ -67,7 +88,7 @@ $viewExit = $LASTEXITCODE
 $ErrorActionPreference = $prevEAP
 
 if ($viewExit -ne 0) {
-    gh release create $tag app.asar $zipPath --title "ChangeIt v$Version (In-App Updates & Super-Lean OTA)" --notes "### ChangeIt v$Version`n`n- **Super-Lean Desktop OTA**: Optimized app.asar to ~2.4MB (95% size reduction).`n- **Mobile In-App Updater**: Direct in-app background download with real-time progress bar and native package installer prompt without needing a web browser.`n- **Package Signature Alignment**: Signed with debug keystore to prevent 'Invalid Package' install errors.`n- **Firewall Stealth Tunneling**: Retains port 20091 dokodemo bypass over VLESS 443."
+    gh release create $tag app.asar $zipPath --title "ChangeIt v$Version (Verified Connect & Real Diagnostics)" --notes "### ChangeIt v$Version`n`n- **Verified connect**: the app now waits for the tunnel core to listen, sends a real probe through it, and only then reports Connected.`n- **Honest failures**: antivirus blocks, missing core files, port conflicts, and unreachable servers are reported with plain-English guidance.`n- **Automatic rollback**: system proxy is restored if the tunnel fails or dies, and stale proxy settings are healed on startup.`n- **Diagnostics panel + logs** at %APPDATA%\\ChangeIt\\logs.`n- **Single-instance lock** prevents two copies from fighting over ports.`n- **Packaging guard**: releases are refused unless the runnable core is included."
 } else {
     gh release upload $tag app.asar $zipPath --clobber
 }
