@@ -1,4 +1,4 @@
-# 🛡️ ChangeIt: Stealth Firewall-Resilient VPN Client & Network Suite
+# 🛡️ ChangeIt VPN: Stealth Firewall-Resilient VPN Client & Network Suite
 
 [![Release](https://img.shields.io/github/v/release/hariharanboss/changeit-vpn?color=cyan&label=Latest%20Release)](https://github.com/hariharanboss/changeit-vpn/releases/latest)
 [![Platform](https://img.shields.io/badge/Platforms-Windows%20%7C%20Android-blue)](https://github.com/hariharanboss/changeit-vpn/releases/latest)
@@ -6,7 +6,7 @@
 [![Package](https://img.shields.io/badge/Android%20Package-com.changeit.vpn-purple)](https://github.com/hariharanboss/changeit-vpn/releases/latest)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**ChangeIt** is an open-source, multi-platform VPN and stealth proxy client engineered to bypass restrictive institutional, university, and enterprise firewalls (e.g., Fortinet FortiGuard, Palo Alto Networks, Cisco Firepower). By wrapping Layer 3 traffic into standard TLS 1.3 / WebSocket encrypted tunnels over **Port 443**, traffic becomes completely indistinguishable from standard HTTPS web browsing.
+**ChangeIt VPN** is an open-source, multi-platform VPN and stealth proxy client engineered to bypass restrictive institutional, university, and enterprise firewalls (e.g., Fortinet FortiGuard, Palo Alto Networks, Cisco Firepower). By wrapping Layer 3 traffic into standard TLS 1.3 / WebSocket encrypted tunnels over **Port 443**, traffic becomes completely indistinguishable from standard HTTPS web browsing.
 
 ---
 
