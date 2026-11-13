@@ -14,10 +14,10 @@
 
 | Platform | Download Link | Description | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Android (arm64)** | [📥 **ChangeIt-arm64.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-arm64.apk) | Recommended for modern Android phones (v1.5.6) | ARM64 (64-bit) |
-| **Android (Universal)** | [📥 **ChangeIt-Universal.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-Universal.apk) | Compatible with all Android devices | Universal |
-| **Windows Desktop** | [📥 **ChangeIt-v1.5.6-Windows-x64.zip**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-v1.5.6-Windows-x64.zip) | Portable Windows app — extract and run `ChangeIt.exe` | Windows x64 |
-| **OTA Hot-Reload** | [📥 **app.asar**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/app.asar) | Lightweight (~1.9 MB) hot-patch package | Cross-platform |
+| **Android (arm64)** | [📥 **ChangeIt-arm64.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/ChangeIt-arm64.apk) | Recommended for modern Android phones (v1.5.7) | ARM64 (64-bit) |
+| **Android (Universal)** | [📥 **ChangeIt-Universal.apk**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/ChangeIt-Universal.apk) | Compatible with all Android devices | Universal |
+| **Windows Desktop** | [📥 **ChangeIt-v1.5.7-Windows-x64.zip**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/ChangeIt-v1.5.7-Windows-x64.zip) | Portable Windows app — extract and run `ChangeIt.exe` | Windows x64 |
+| **OTA Hot-Reload** | [📥 **app.asar**](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/app.asar) | Lightweight (~1.9 MB) hot-patch package | Cross-platform |
 
 ---
 
@@ -65,18 +65,19 @@ Standard VPN protocols fail on institutional firewalls because their signatures 
 
 ## 📱 Mobile App Setup (Android)
 
-1. **Install APK**: Download [`ChangeIt-arm64.apk`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-arm64.apk) and install it on your device.
+1. **Install APK**: Download [`ChangeIt-arm64.apk`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/ChangeIt-arm64.apk) and install it on your device.
 2. **Launch & Connect**:
    - Open **ChangeIt**.
    - Tap the central connect button.
    - Accept the Android VPN permission prompt on first launch.
-3. **Automatic Updates**: When future versions are released, tap **Update** directly inside the app for seamless background installation.
+3. **Recovery after a force-quit**: if Android stops the tunnel from the notification panel or App settings, the app detects it on the next launch and asks you to reconnect instead of staying stuck on "Connected". No clearing of app data required.
+4. **Automatic Updates**: When future versions are released, tap **Update** directly inside the app for seamless background installation.
 
 ---
 
 ## 💻 Desktop App Setup (Windows)
 
-1. **Download & Extract**: Download [`ChangeIt-v1.5.6-Windows-x64.zip`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.6/ChangeIt-v1.5.6-Windows-x64.zip) and extract it to any folder.
+1. **Download & Extract**: Download [`ChangeIt-v1.5.7-Windows-x64.zip`](https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.7/ChangeIt-v1.5.7-Windows-x64.zip) and extract it to any folder.
 2. **Run**: Launch `ChangeIt.exe`.
 3. **Connect**: Click **Connect**. The app verifies the tunnel before showing "Connected"; on failure it shows the reason and restores your internet settings.
 
