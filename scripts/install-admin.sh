@@ -189,7 +189,7 @@ def verify_token(token):
             auth = json.load(f)
         secret = auth.get("secret_key", "")
         # Token format: timestamp.signature
-        parts = token.split(".")
+        parts = token.rsplit(".", 1)
         if len(parts) != 2:
             return False
         ts, sig = parts[0], parts[1]
@@ -341,7 +341,7 @@ class AdminHandler(http.server.BaseHTTPRequestHandler):
                 
                 check_hash = hashlib.sha256((provided_pass + salt).encode()).hexdigest()
                 if hmac.compare_digest(check_hash, expected_hash):
-                    ts = str(time.time())
+                    ts = str(int(time.time()))
                     sig = hmac.new(secret.encode(), ts.encode(), hashlib.sha256).hexdigest()
                     token = f"{ts}.{sig}"
                     self.send_response(200)
