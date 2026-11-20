@@ -73,6 +73,10 @@ DATA_DIR = "/var/lib/changeit-admin"
 DB_PATH = os.path.join(DATA_DIR, "admin.db")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 NGINX_LOG = "/var/log/nginx/access.log"
+XRAY_LOG = "/var/log/xray/access.log"
+
+# Server public IPs and local addresses to exclude from client metrics
+SERVER_IPS = {"127.0.0.1", "::1", "37.187.159.43", "135.125.222.22"}
 
 # In-memory GeoIP cache to avoid duplicate HTTP lookups
 GEO_CACHE = {}
@@ -105,6 +109,9 @@ def init_db():
                     action TEXT
                 )
             ''')
+            # Clean out server self-IPs
+            c.execute("DELETE FROM users WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
+            c.execute("DELETE FROM events WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
             conn.commit()
     except Exception as e:
         print(f"init_db error: {e}")
@@ -117,7 +124,7 @@ def lookup_ip(ip, cached_geo=None):
         GEO_CACHE[ip] = cached_geo
         return cached_geo
     # Skip local IPs
-    if ip.startswith(('127.', '10.', '192.168.', '172.')) or ip == '::1':
+    if ip.startswith(('127.', '10.', '192.168.', '172.')) or ip == '::1' or ip in SERVER_IPS:
         res = {"city": "Local Network", "region": "LAN", "country": "Local", "country_code": "IN", "isp": "Intranet"}
         GEO_CACHE[ip] = res
         return res
@@ -143,28 +150,80 @@ def lookup_ip(ip, cached_geo=None):
     GEO_CACHE[ip] = fallback
     return fallback
 
-# --- Sync from Nginx Access Log ---
-def sync_logs():
-    if not os.path.exists(NGINX_LOG):
+# --- Active Established Sockets on TLS port 443 ---
+def get_active_client_ips():
+    active = set()
+    try:
+        with os.popen("ss -H -tn state established '( sport = :443 )'") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 5:
+                    peer = parts[4]
+                    ip = peer.rsplit(":", 1)[0].strip("[]")
+                    if ip and ip not in SERVER_IPS and not ip.startswith(('127.', '10.', '192.168.', '172.')):
+                        active.add(ip)
+    except Exception:
+        pass
+    return active
+
+# --- Real-Time Link & Destination Tracking from Xray Core ---
+def sync_xray_traffic(active_clients, conn):
+    if not os.path.exists(XRAY_LOG):
         return
+    try:
+        c = conn.cursor()
+        now = int(time.time())
+        primary_client = next(iter(active_clients)) if active_clients else None
+        
+        with os.popen(f"tail -n 60 {XRAY_LOG}") as f:
+            for line in f:
+                m = re.search(r"(\S+:\d+)\s+accepted\s+(?:tcp|udp):([^ ]+)", line)
+                if m:
+                    src = m.group(1).rsplit(":", 1)[0].strip("[]")
+                    dest = m.group(2).strip()
+                    # Attribute to connected client
+                    client_ip = src if src not in SERVER_IPS and not src.startswith(('127.', '10.')) else primary_client
+                    if client_ip:
+                        display_dest = dest.replace(":443", "").replace(":80", "")
+                        action = f"Browsing {display_dest}"
+                        # Check duplicate in last 15s
+                        c.execute("SELECT id FROM events WHERE ip = ? AND action = ? AND ? - timestamp < 15", (client_ip, action, now))
+                        if not c.fetchone():
+                            c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
+                                      (now, client_ip, action))
+    except Exception as e:
+        print(f"sync_xray_traffic error: {e}")
+
+# --- Sync from Nginx Access Log and Active Sockets ---
+def sync_logs():
     try:
         now = int(time.time())
         seen_ips = {}
-        with os.popen(f"tail -n 200 {NGINX_LOG}") as f:
-            for line in f:
-                if "/tunnel" in line or "101" in line:
-                    match = re.match(r"^(\S+)", line)
-                    if match:
-                        client_ip = match.group(1).strip()
-                        if client_ip and client_ip != "127.0.0.1":
-                            seen_ips[client_ip] = seen_ips.get(client_ip, 0) + 1
 
-        if not seen_ips:
-            return
+        # 1. Real-time active TCP connections on port 443
+        active_sockets = get_active_client_ips()
+        for ip in active_sockets:
+            seen_ips[ip] = seen_ips.get(ip, 0) + 1
+
+        # 2. Historical requests from Nginx access log
+        if os.path.exists(NGINX_LOG):
+            with os.popen(f"tail -n 200 {NGINX_LOG}") as f:
+                for line in f:
+                    if "/tunnel" in line or "101" in line:
+                        match = re.match(r"^(\S+)", line)
+                        if match:
+                            client_ip = match.group(1).strip()
+                            if client_ip and client_ip not in SERVER_IPS and not client_ip.startswith(('127.', '10.', '192.168.', '172.')):
+                                seen_ips[client_ip] = seen_ips.get(client_ip, 0) + 1
 
         with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
             c = conn.cursor()
+            # Clean server self-IPs
+            c.execute("DELETE FROM users WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
+            c.execute("DELETE FROM events WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
+
             for client_ip, count in seen_ips.items():
+                is_currently_online = 1 if client_ip in active_sockets else 0
                 c.execute("SELECT city, region, country, country_code, isp, first_seen FROM users WHERE ip = ?", (client_ip,))
                 row = c.fetchone()
                 if row:
@@ -173,21 +232,27 @@ def sync_logs():
                         UPDATE users SET 
                             last_seen = ?, 
                             connections = connections + ?,
-                            is_online = 1,
+                            is_online = ?,
                             city = ?, region = ?, country = ?, country_code = ?, isp = ?
                         WHERE ip = ?
-                    ''', (now, count, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
+                    ''', (now, count, 1 if is_currently_online else 0, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
                 else:
                     geo = lookup_ip(client_ip)
                     c.execute('''
                         INSERT INTO users (ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                    ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now, count))
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now, count, 1))
                     c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
                               (now, client_ip, f"Connected from {geo['city']}, {geo['region']}"))
 
-            # Mark users idle if not seen in 10 minutes
-            c.execute("UPDATE users SET is_online = 0 WHERE ? - last_seen > 600", (now,))
+            # Mark users offline if socket is closed AND last_seen > 120s
+            for client_ip in seen_ips.keys():
+                if client_ip not in active_sockets:
+                    c.execute("UPDATE users SET is_online = 0 WHERE ip = ? AND ? - last_seen > 120", (client_ip, now))
+
+            # 3. Correlate real-time link access from Xray Core
+            sync_xray_traffic(active_sockets, conn)
+
             conn.commit()
     except Exception as e:
         print(f"sync_logs error: {e}")
@@ -312,7 +377,7 @@ class AdminHandler(http.server.BaseHTTPRequestHandler):
                             "is_online": is_on
                         })
 
-                    c.execute("SELECT timestamp, ip, action FROM events ORDER BY id DESC LIMIT 20")
+                    c.execute("SELECT timestamp, ip, action FROM events ORDER BY id DESC LIMIT 50")
                     events = [{"time": r[0], "ip": r[1], "action": r[2]} for r in c.fetchall()]
             except Exception as e:
                 print(f"Stats query error: {e}")
