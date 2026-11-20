@@ -146,12 +146,14 @@ def sync_xray_traffic(active_clients, conn):
                         if extracted not in SERVER_IPS and not extracted.startswith(('127.', '10.', '192.168.', '172.')):
                             client_ip = extracted
 
-                    if client_ip and client_ip not in SERVER_IPS and not client_ip.startswith(('127.', 'tcp:')):
-                        action = f"Browsing {display_dest}"
-                        c.execute("SELECT id FROM events WHERE ip = ? AND action = ? AND ? - timestamp < 10", (client_ip, action, now))
-                        if not c.fetchone():
-                            c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
-                                      (now, client_ip, action))
+                    if not client_ip:
+                        client_ip = "Active Device"
+
+                    action = f"Browsing {display_dest}"
+                    c.execute("SELECT id FROM events WHERE ip = ? AND action = ? AND ? - timestamp < 10", (client_ip, action, now))
+                    if not c.fetchone():
+                        c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
+                                  (now, client_ip, action))
     except Exception as e:
         print(f"sync_xray_traffic error: {e}")
 
@@ -161,12 +163,12 @@ def sync_logs():
         now = int(time.time())
         seen_ips = {}
 
-        # 1. Real-time active TCP connections on port 443
+        # 1. Real-time active TCP connections on port 443 / 80
         active_sockets = get_active_client_ips()
         for ip in active_sockets:
             seen_ips[ip] = seen_ips.get(ip, 0) + 1
 
-        # 2. Historical requests from Nginx access log
+        # 2. Requests from Nginx access log
         if os.path.exists(NGINX_LOG):
             with os.popen(f"tail -n 200 {NGINX_LOG}") as f:
                 for line in f:
@@ -174,7 +176,7 @@ def sync_logs():
                         match = re.match(r"^(\S+)", line)
                         if match:
                             client_ip = match.group(1).strip()
-                            if client_ip and client_ip not in SERVER_IPS and not client_ip.startswith(('127.', '10.', '192.168.', '172.')):
+                            if client_ip and client_ip not in SERVER_IPS and not client_ip.startswith(('127.', '10.', '192.168.', '172.', 'tcp:')):
                                 seen_ips[client_ip] = seen_ips.get(client_ip, 0) + 1
 
         with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
@@ -184,7 +186,6 @@ def sync_logs():
             c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
 
             for client_ip, count in seen_ips.items():
-                is_currently_online = 1 if client_ip in active_sockets else 0
                 c.execute("SELECT city, region, country, country_code, isp, first_seen FROM users WHERE ip = ?", (client_ip,))
                 row = c.fetchone()
                 if row:
@@ -193,23 +194,21 @@ def sync_logs():
                         UPDATE users SET 
                             last_seen = ?, 
                             connections = connections + ?,
-                            is_online = ?,
+                            is_online = 1,
                             city = ?, region = ?, country = ?, country_code = ?, isp = ?
                         WHERE ip = ?
-                    ''', (now, count, 1 if is_currently_online else 0, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
+                    ''', (now, count, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
                 else:
                     geo = lookup_ip(client_ip)
                     c.execute('''
                         INSERT INTO users (ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now, count, 1))
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now, count))
                     c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
                               (now, client_ip, f"Connected from {geo['city']}, {geo['region']}"))
 
-            # Mark users offline if socket is closed AND last_seen > 120s
-            for client_ip in seen_ips.keys():
-                if client_ip not in active_sockets:
-                    c.execute("UPDATE users SET is_online = 0 WHERE ip = ? AND ? - last_seen > 120", (client_ip, now))
+            # Mark users offline if not seen in 5 minutes
+            c.execute("UPDATE users SET is_online = 0 WHERE ? - last_seen > 300", (now,))
 
             # 3. Correlate real-time link access from Xray Core
             sync_xray_traffic(active_sockets, conn)
