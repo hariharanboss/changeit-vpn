@@ -58,6 +58,11 @@ if (Test-Path $rcedit) {
 if (Test-Path "bin") {
     New-Item -ItemType Directory -Force -Path "release\win-unpacked\bin" | Out-Null
     Copy-Item "bin\*" "release\win-unpacked\bin" -Recurse -Force
+    # Always copy the working server config so users get a connected tunnel out of the box
+    if (Test-Path "bin\xray\config.local.json") {
+        Copy-Item "bin\xray\config.local.json" "release\win-unpacked\bin\xray\config.local.json" -Force
+        Write-Host ">>> [OTA] Server config bundled into release." -ForegroundColor Green
+    }
 }
 
 # 3. Create zip package
