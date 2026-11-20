@@ -56,6 +56,7 @@ cat << 'EOF' > "$APP_DIR/server.py"
 #!/usr/bin/env python3
 import http.server
 import socketserver
+import threading
 import json
 import sqlite3
 import urllib.request
@@ -73,66 +74,74 @@ DB_PATH = os.path.join(DATA_DIR, "admin.db")
 AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 NGINX_LOG = "/var/log/nginx/access.log"
 
+# In-memory GeoIP cache to avoid duplicate HTTP lookups
+GEO_CACHE = {}
+
 # --- Database Setup ---
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            ip TEXT PRIMARY KEY,
-            city TEXT,
-            region TEXT,
-            country TEXT,
-            country_code TEXT,
-            isp TEXT,
-            first_seen INTEGER,
-            last_seen INTEGER,
-            connections INTEGER DEFAULT 1,
-            is_online INTEGER DEFAULT 0
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp INTEGER,
-            ip TEXT,
-            action TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    try:
+        with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
+            c = conn.cursor()
+            c.execute('PRAGMA journal_mode=WAL')
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    ip TEXT PRIMARY KEY,
+                    city TEXT,
+                    region TEXT,
+                    country TEXT,
+                    country_code TEXT,
+                    isp TEXT,
+                    first_seen INTEGER,
+                    last_seen INTEGER,
+                    connections INTEGER DEFAULT 1,
+                    is_online INTEGER DEFAULT 0
+                )
+            ''')
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp INTEGER,
+                    ip TEXT,
+                    action TEXT
+                )
+            ''')
+            conn.commit()
+    except Exception as e:
+        print(f"init_db error: {e}")
 
 # --- GeoIP Lookup (Cached) ---
-def lookup_ip(ip):
+def lookup_ip(ip, cached_geo=None):
+    if ip in GEO_CACHE:
+        return GEO_CACHE[ip]
+    if cached_geo and cached_geo.get('city') and cached_geo.get('city') != 'Unknown':
+        GEO_CACHE[ip] = cached_geo
+        return cached_geo
     # Skip local IPs
     if ip.startswith(('127.', '10.', '192.168.', '172.')) or ip == '::1':
-        return {"city": "Local Network", "region": "Campus LAN", "country": "Local", "country_code": "IN", "isp": "Intranet"}
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT city, region, country, country_code, isp FROM users WHERE ip = ?", (ip,))
-    row = c.fetchone()
-    conn.close()
-    
-    if row and row[0] and row[0] != "Unknown":
-        return {"city": row[0], "region": row[1], "country": row[2], "country_code": row[3], "isp": row[4]}
+        res = {"city": "Local Network", "region": "LAN", "country": "Local", "country_code": "IN", "isp": "Intranet"}
+        GEO_CACHE[ip] = res
+        return res
     
     try:
         url = f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,regionName,city,isp"
         req = urllib.request.Request(url, headers={'User-Agent': 'ChangeItAdmin/1.0'})
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             if data.get('status') == 'success':
-                return {
+                res = {
                     "city": data.get('city', 'Unknown'),
                     "region": data.get('regionName', 'Unknown'),
                     "country": data.get('country', 'Unknown'),
                     "country_code": data.get('countryCode', 'UN'),
                     "isp": data.get('isp', 'Unknown ISP')
                 }
+                GEO_CACHE[ip] = res
+                return res
     except Exception:
         pass
-    return {"city": "Active Node", "region": "State", "country": "India", "country_code": "IN", "isp": "Cellular / Broadband"}
+    fallback = {"city": "Active Node", "region": "State", "country": "India", "country_code": "IN", "isp": "Cellular / Broadband"}
+    GEO_CACHE[ip] = fallback
+    return fallback
 
 # --- Sync from Nginx Access Log ---
 def sync_logs():
@@ -140,45 +149,56 @@ def sync_logs():
         return
     try:
         now = int(time.time())
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        # Read last 300 lines of nginx access log
-        with os.popen(f"tail -n 300 {NGINX_LOG}") as f:
+        seen_ips = {}
+        with os.popen(f"tail -n 200 {NGINX_LOG}") as f:
             for line in f:
-                # Detect /tunnel websocket connections
                 if "/tunnel" in line or "101" in line:
                     match = re.match(r"^(\S+)", line)
                     if match:
                         client_ip = match.group(1).strip()
                         if client_ip and client_ip != "127.0.0.1":
-                            # Check if user exists
-                            c.execute("SELECT first_seen, connections FROM users WHERE ip = ?", (client_ip,))
-                            user_row = c.fetchone()
-                            geo = lookup_ip(client_ip)
-                            if user_row:
-                                c.execute('''
-                                    UPDATE users SET 
-                                        last_seen = ?, 
-                                        connections = connections + 1,
-                                        is_online = 1,
-                                        city = ?, region = ?, country = ?, country_code = ?, isp = ?
-                                    WHERE ip = ?
-                                ''', (now, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
-                            else:
-                                c.execute('''
-                                    INSERT INTO users (ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
-                                ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now))
-                                c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
-                                          (now, client_ip, f"New device connected from {geo['city']}, {geo['region']}"))
-        
-        # Mark users idle if not seen in 10 minutes
-        c.execute("UPDATE users SET is_online = 0 WHERE ? - last_seen > 600", (now,))
-        conn.commit()
-        conn.close()
+                            seen_ips[client_ip] = seen_ips.get(client_ip, 0) + 1
+
+        if not seen_ips:
+            return
+
+        with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
+            c = conn.cursor()
+            for client_ip, count in seen_ips.items():
+                c.execute("SELECT city, region, country, country_code, isp, first_seen FROM users WHERE ip = ?", (client_ip,))
+                row = c.fetchone()
+                if row:
+                    geo = lookup_ip(client_ip, {"city": row[0], "region": row[1], "country": row[2], "country_code": row[3], "isp": row[4]})
+                    c.execute('''
+                        UPDATE users SET 
+                            last_seen = ?, 
+                            connections = connections + ?,
+                            is_online = 1,
+                            city = ?, region = ?, country = ?, country_code = ?, isp = ?
+                        WHERE ip = ?
+                    ''', (now, count, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], client_ip))
+                else:
+                    geo = lookup_ip(client_ip)
+                    c.execute('''
+                        INSERT INTO users (ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    ''', (client_ip, geo['city'], geo['region'], geo['country'], geo['country_code'], geo['isp'], now, now, count))
+                    c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
+                              (now, client_ip, f"Connected from {geo['city']}, {geo['region']}"))
+
+            # Mark users idle if not seen in 10 minutes
+            c.execute("UPDATE users SET is_online = 0 WHERE ? - last_seen > 600", (now,))
+            conn.commit()
     except Exception as e:
-        pass
+        print(f"sync_logs error: {e}")
+
+def background_sync_worker():
+    while True:
+        try:
+            sync_logs()
+        except Exception:
+            pass
+        time.sleep(5)
 
 # --- Auth Verification ---
 def verify_token(token):
@@ -269,31 +289,33 @@ class AdminHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Unauthorized"}).encode('utf-8'))
                 return
 
-            sync_logs()
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute("SELECT ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online FROM users ORDER BY last_seen DESC")
             users = []
+            events = []
             active_count = 0
-            for r in c.fetchall():
-                is_on = bool(r[9])
-                if is_on: active_count += 1
-                users.append({
-                    "ip": r[0],
-                    "city": r[1],
-                    "region": r[2],
-                    "country": r[3],
-                    "country_code": r[4],
-                    "isp": r[5],
-                    "first_seen": r[6],
-                    "last_seen": r[7],
-                    "connections": r[8],
-                    "is_online": is_on
-                })
+            try:
+                with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
+                    c = conn.cursor()
+                    c.execute("SELECT ip, city, region, country, country_code, isp, first_seen, last_seen, connections, is_online FROM users ORDER BY last_seen DESC")
+                    for r in c.fetchall():
+                        is_on = bool(r[9])
+                        if is_on: active_count += 1
+                        users.append({
+                            "ip": r[0],
+                            "city": r[1],
+                            "region": r[2],
+                            "country": r[3],
+                            "country_code": r[4],
+                            "isp": r[5],
+                            "first_seen": r[6],
+                            "last_seen": r[7],
+                            "connections": r[8],
+                            "is_online": is_on
+                        })
 
-            c.execute("SELECT timestamp, ip, action FROM events ORDER BY id DESC LIMIT 20")
-            events = [{"time": r[0], "ip": r[1], "action": r[2]} for r in c.fetchall()]
-            conn.close()
+                    c.execute("SELECT timestamp, ip, action FROM events ORDER BY id DESC LIMIT 20")
+                    events = [{"time": r[0], "ip": r[1], "action": r[2]} for r in c.fetchall()]
+            except Exception as e:
+                print(f"Stats query error: {e}")
 
             rx_speed, tx_speed, total_gb = get_network_speeds()
 
@@ -552,7 +574,9 @@ HTML_DASHBOARD = '''<!DOCTYPE html>
             </div>
           `).join('');
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error("fetchStats error:", err);
+      }
     }
 
     function timeAgo(epoch) {
@@ -576,7 +600,9 @@ HTML_DASHBOARD = '''<!DOCTYPE html>
 
 if __name__ == '__main__':
     init_db()
-    with socketserver.TCPServer(("127.0.0.1", PORT), AdminHandler) as httpd:
+    sync_thread = threading.Thread(target=background_sync_worker, daemon=True)
+    sync_thread.start()
+    with http.server.ThreadingHTTPServer(("127.0.0.1", PORT), AdminHandler) as httpd:
         print(f"ChangeIt Admin daemon listening on 127.0.0.1:{PORT}")
         httpd.serve_forever()
 EOF
