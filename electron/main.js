@@ -117,42 +117,65 @@ function readLogTail(file, maxBytes = 4000) {
 
 // ---- Windows system proxy --------------------------------------------------
 
-function refreshProxySettings() {
-  // WinINET caches proxy settings; registry writes alone are not picked up by
-  // every app without InternetSetOption(REFRESH / SETTINGS_CHANGED).
-  const script = [
-    '$sig = @"',
-    '[DllImport("wininet.dll", SetLastError = true, CharSet = CharSet.Auto)]',
-    'public static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);',
-    '"@',
-    'Add-Type -MemberDefinition $sig -Name WinINet -Namespace ChangeIt -ErrorAction SilentlyContinue | Out-Null',
-    '[ChangeIt.WinINet]::InternetSetOption([IntPtr]::Zero, 39, [IntPtr]::Zero, 0) | Out-Null',
-    '[ChangeIt.WinINet]::InternetSetOption([IntPtr]::Zero, 37, [IntPtr]::Zero, 0) | Out-Null'
-  ].join('\r\n');
+function setWindowsProxy(enable) {
+  const overrideList = '<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*';
+  
+  // Fast baseline registry writes
+  if (enable) {
+    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f');
+    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "127.0.0.1:10809" /f');
+    exec(`reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyOverride /t REG_SZ /d "${overrideList}" /f`);
+  } else {
+    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f');
+  }
+
+  // Full connection update for Chrome, Edge, and modern Windows WinINet
+  const psScript = [
+    `$enable = ${enable ? '$true' : '$false'}`,
+    `$proxy = "127.0.0.1:10809"`,
+    `$override = "${overrideList}"`,
+    `$settingsPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings"`,
+    `$connsPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Connections"`,
+    `Set-ItemProperty -Path $settingsPath -Name "ProxyEnable" -Value $(if ($enable) { 1 } else { 0 }) -ErrorAction SilentlyContinue`,
+    `if ($enable) {`,
+    `    Set-ItemProperty -Path $settingsPath -Name "ProxyServer" -Value $proxy -ErrorAction SilentlyContinue`,
+    `    Set-ItemProperty -Path $settingsPath -Name "ProxyOverride" -Value $override -ErrorAction SilentlyContinue`,
+    `}`,
+    `$conns = Get-ItemProperty -Path $connsPath -ErrorAction SilentlyContinue`,
+    `if ($conns) {`,
+    `    foreach ($prop in "DefaultConnectionSettings", "SavedLegacySettings") {`,
+    `        if ($conns.$prop) {`,
+    `            $b = [byte[]]$conns.$prop`,
+    `            if ($b.Length -gt 8) {`,
+    `                if ($enable) {`,
+    `                    $b[8] = ($b[8] -bor 2)`,
+    `                } else {`,
+    `                    $b[8] = ($b[8] -band (-bnot 2))`,
+    `                }`,
+    `                Set-ItemProperty -Path $connsPath -Name $prop -Value $b -ErrorAction SilentlyContinue`,
+    `            }`,
+    `        }`,
+    `    }`,
+    `}`,
+    `$sig = @"`,
+    `[DllImport("wininet.dll", SetLastError = true, CharSet = CharSet.Auto)]`,
+    `public static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);`,
+    `"@`,
+    `Add-Type -MemberDefinition $sig -Name WinINetProxy -Namespace ChangeIt -ErrorAction SilentlyContinue | Out-Null`,
+    `[ChangeIt.WinINetProxy]::InternetSetOption([IntPtr]::Zero, 39, [IntPtr]::Zero, 0) | Out-Null`,
+    `[ChangeIt.WinINetProxy]::InternetSetOption([IntPtr]::Zero, 37, [IntPtr]::Zero, 0) | Out-Null`
+  ].join('\\r\\n');
 
   try {
-    const scriptPath = path.join(getLogDir(), 'refresh-proxy.ps1');
-    if (!fs.existsSync(scriptPath)) fs.writeFileSync(scriptPath, script, 'utf-8');
+    const scriptPath = path.join(getLogDir(), 'set-proxy.ps1');
+    fs.writeFileSync(scriptPath, psScript, 'utf-8');
     execFile('powershell.exe', [
       '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
       '-ExecutionPolicy', 'Bypass', '-File', scriptPath
     ], { windowsHide: true, timeout: 8000 }, () => {});
   } catch (_) {}
-}
 
-function setWindowsProxy(enable) {
-  if (enable) {
-    const overrideList = '<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*;135.125.222.22';
-    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f');
-    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "127.0.0.1:10809" /f');
-    exec(`reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyOverride /t REG_SZ /d "${overrideList}" /f`);
-    refreshProxySettings();
-    logEvent('System proxy enabled -> ' + PROXY_SERVER);
-  } else {
-    exec('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f');
-    refreshProxySettings();
-    logEvent('System proxy disabled');
-  }
+  logEvent(enable ? 'System proxy enabled -> ' + PROXY_SERVER : 'System proxy disabled');
 }
 
 function readRegistryValue(name) {
