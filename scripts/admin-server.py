@@ -54,9 +54,9 @@ def init_db():
                     action TEXT
                 )
             ''')
-            # Clean out server self-IPs
-            c.execute("DELETE FROM users WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
-            c.execute("DELETE FROM events WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
+            # Clean out server self-IPs and loopback artifacts
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
             conn.commit()
     except Exception as e:
         print(f"init_db error: {e}")
@@ -99,16 +99,17 @@ def lookup_ip(ip, cached_geo=None):
 def get_active_client_ips():
     active = set()
     try:
-        with os.popen("ss -H -tn state established '( sport = :443 )'") as f:
+        with os.popen("ss -tn state established") as f:
             for line in f:
                 parts = line.split()
-                if len(parts) >= 5:
-                    peer = parts[4]
-                    ip = peer.rsplit(":", 1)[0].strip("[]")
-                    if ip and ip not in SERVER_IPS and not ip.startswith(('127.', '10.', '192.168.', '172.')):
-                        active.add(ip)
-    except Exception:
-        pass
+                for i, token in enumerate(parts):
+                    if ":443" in token and i + 1 < len(parts):
+                        peer = parts[i + 1]
+                        ip = peer.rsplit(":", 1)[0].strip("[]").replace("::ffff:", "")
+                        if ip and ip not in SERVER_IPS and not ip.startswith(('127.', '10.', '192.168.', '172.')):
+                            active.add(ip)
+    except Exception as e:
+        print(f"get_active_client_ips error: {e}")
     return active
 
 # --- Real-Time Link & Destination Tracking from Xray Core ---
@@ -119,20 +120,35 @@ def sync_xray_traffic(active_clients, conn):
         c = conn.cursor()
         now = int(time.time())
         primary_client = next(iter(active_clients)) if active_clients else None
-        
+        if not primary_client:
+            c.execute("SELECT ip FROM users WHERE is_online = 1 ORDER BY last_seen DESC LIMIT 1")
+            row = c.fetchone()
+            if row:
+                primary_client = row[0]
+            else:
+                c.execute("SELECT ip FROM users ORDER BY last_seen DESC LIMIT 1")
+                row2 = c.fetchone()
+                if row2:
+                    primary_client = row2[0]
+
         with os.popen(f"tail -n 60 {XRAY_LOG}") as f:
             for line in f:
-                m = re.search(r"(\S+:\d+)\s+accepted\s+(?:tcp|udp):([^ ]+)", line)
+                m = re.search(r"accepted\s+(?:tcp|udp):([^ ]+)", line)
                 if m:
-                    src = m.group(1).rsplit(":", 1)[0].strip("[]")
-                    dest = m.group(2).strip()
-                    # Attribute to connected client
-                    client_ip = src if src not in SERVER_IPS and not src.startswith(('127.', '10.')) else primary_client
-                    if client_ip:
-                        display_dest = dest.replace(":443", "").replace(":80", "")
+                    dest = m.group(1).strip()
+                    display_dest = dest.replace(":443", "").replace(":80", "")
+                    
+                    # Direct client IP if present, otherwise attribute to primary active user
+                    client_ip = primary_client
+                    m_ip = re.search(r"(?:tcp|udp):(\[[a-fA-F0-9:]+\]|[\d\.]+):\d+\s+accepted", line)
+                    if m_ip:
+                        extracted = m_ip.group(1).strip("[]").replace("::ffff:", "")
+                        if extracted not in SERVER_IPS and not extracted.startswith(('127.', '10.', '192.168.', '172.')):
+                            client_ip = extracted
+
+                    if client_ip and client_ip not in SERVER_IPS and not client_ip.startswith(('127.', 'tcp:')):
                         action = f"Browsing {display_dest}"
-                        # Check duplicate in last 15s
-                        c.execute("SELECT id FROM events WHERE ip = ? AND action = ? AND ? - timestamp < 15", (client_ip, action, now))
+                        c.execute("SELECT id FROM events WHERE ip = ? AND action = ? AND ? - timestamp < 10", (client_ip, action, now))
                         if not c.fetchone():
                             c.execute("INSERT INTO events (timestamp, ip, action) VALUES (?, ?, ?)",
                                       (now, client_ip, action))
@@ -163,9 +179,9 @@ def sync_logs():
 
         with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
             c = conn.cursor()
-            # Clean server self-IPs
-            c.execute("DELETE FROM users WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
-            c.execute("DELETE FROM events WHERE ip IN ('37.187.159.43', '135.125.222.22', '127.0.0.1')")
+            # Clean server self-IPs and loopback artifacts
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
 
             for client_ip, count in seen_ips.items():
                 is_currently_online = 1 if client_ip in active_sockets else 0
