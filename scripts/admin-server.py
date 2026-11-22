@@ -20,8 +20,8 @@ AUTH_FILE = os.path.join(DATA_DIR, "auth.json")
 NGINX_LOG = "/var/log/nginx/access.log"
 XRAY_LOG = "/var/log/xray/access.log"
 
-# Server public IPs and local addresses to exclude from client metrics
-SERVER_IPS = {"127.0.0.1", "::1", "37.187.159.43", "135.125.222.22"}
+# Server loopback and internal gateway IPs to exclude
+SERVER_IPS = {"127.0.0.1", "::1", "135.125.222.22", "10.10.10.99"}
 
 # In-memory GeoIP cache to avoid duplicate HTTP lookups
 GEO_CACHE = {}
@@ -54,9 +54,9 @@ def init_db():
                     action TEXT
                 )
             ''')
-            # Clean out server self-IPs and loopback artifacts
-            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
-            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
+            # Clean out local loopback artifacts
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
             conn.commit()
     except Exception as e:
         print(f"init_db error: {e}")
@@ -95,17 +95,18 @@ def lookup_ip(ip, cached_geo=None):
     GEO_CACHE[ip] = fallback
     return fallback
 
-# --- Active Established Sockets on TLS port 443 ---
+# --- Active Established Sockets on port 80 / 443 ---
 def get_active_client_ips():
     active = set()
     try:
         with os.popen("ss -tn state established") as f:
             for line in f:
                 parts = line.split()
-                for i, token in enumerate(parts):
-                    if ":443" in token and i + 1 < len(parts):
-                        peer = parts[i + 1]
-                        ip = peer.rsplit(":", 1)[0].strip("[]").replace("::ffff:", "")
+                if len(parts) >= 4:
+                    local_addr = parts[2]
+                    peer_addr = parts[3]
+                    if ":80" in local_addr or ":443" in local_addr:
+                        ip = peer_addr.rsplit(":", 1)[0].strip("[]").replace("::ffff:", "")
                         if ip and ip not in SERVER_IPS and not ip.startswith(('127.', '10.', '192.168.', '172.')):
                             active.add(ip)
     except Exception as e:
@@ -181,9 +182,9 @@ def sync_logs():
 
         with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
             c = conn.cursor()
-            # Clean server self-IPs and loopback artifacts
-            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
-            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('37.187.159.43', '135.125.222.22')")
+            # Clean out local loopback artifacts
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
 
             for client_ip, count in seen_ips.items():
                 c.execute("SELECT city, region, country, country_code, isp, first_seen FROM users WHERE ip = ?", (client_ip,))
