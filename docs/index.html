@@ -543,38 +543,11 @@
     box-shadow: 0 10px 30px rgba(124, 92, 255, 0.15);
   }
 
-  .dl-card .badge-type {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .badge-type.rec {
-    background: var(--green-bg);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    color: var(--green);
-  }
-
-  .badge-type.portable {
-    background: var(--cyan-bg);
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    color: var(--cyan);
-  }
-
   .dl-card h3 {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-bright);
-    margin-right: 90px;
+    margin-right: 0;
   }
 
   .dl-card .desc {
@@ -886,11 +859,6 @@
     .dl-card h3 {
       margin-right: 0;
     }
-    .badge-type {
-      position: static;
-      align-self: flex-start;
-      margin-bottom: 6px;
-    }
   }
 </style>
 </head>
@@ -990,7 +958,6 @@
           
           <!-- Windows Installer (.exe) -->
           <div class="dl-card featured">
-            <span class="badge-type rec"><i data-lucide="check"></i> Recommended</span>
             <h3>ChangeIt-Setup-1.5.9.exe</h3>
             <p class="desc">1-Click standard Windows installer. Automatically installs desktop &amp; Start menu shortcuts and provisions the background stealth engine.</p>
             <div class="meta-row">
@@ -1013,7 +980,6 @@
 
           <!-- Windows Portable (.zip) -->
           <div class="dl-card">
-            <span class="badge-type portable"><i data-lucide="folder-archive"></i> Portable</span>
             <h3>ChangeIt-v1.5.9-Windows-x64.zip</h3>
             <p class="desc">Standalone portable ZIP archive. Extract to any directory or USB drive and launch <code>ChangeIt.exe</code> directly without installation.</p>
             <div class="meta-row">
@@ -1046,7 +1012,6 @@
           
           <!-- Android ARM64 -->
           <div class="dl-card featured">
-            <span class="badge-type rec"><i data-lucide="check"></i> Recommended</span>
             <h3>ChangeIt-arm64.apk</h3>
             <p class="desc">Optimized 64-bit APK for modern smartphones with Proton-style dark OLED home screen widget &amp; app shortcuts.</p>
             <div class="meta-row">
@@ -1068,7 +1033,6 @@
 
           <!-- Android Universal -->
           <div class="dl-card">
-            <span class="badge-type portable"><i data-lucide="layers"></i> All Devices</span>
             <h3>ChangeIt-Universal.apk</h3>
             <p class="desc">Universal binary compatible with all Android architectures including older devices, 32-bit ARM, and x86 emulators.</p>
             <div class="meta-row">
@@ -1101,7 +1065,6 @@
           
           <!-- Linux Deb -->
           <div class="dl-card featured">
-            <span class="badge-type rec"><i data-lucide="check"></i> Debian / Ubuntu / Mint</span>
             <h3>ChangeIt-1.5.9-amd64.deb</h3>
             <p class="desc">Native Debian package. Installs system binaries to <code>/opt/changeit</code>, creates desktop entry, and adds <code>changeit</code> to terminal PATH.</p>
             <div class="meta-row">
@@ -1123,7 +1086,6 @@
 
           <!-- Linux AppImage -->
           <div class="dl-card">
-            <span class="badge-type portable"><i data-lucide="rocket"></i> Universal Linux</span>
             <h3>ChangeIt-1.5.9-x86_64.AppImage</h3>
             <p class="desc">Single-file standalone executable that runs directly on Arch, Fedora, openSUSE, or any modern Linux distribution.</p>
             <div class="meta-row">
