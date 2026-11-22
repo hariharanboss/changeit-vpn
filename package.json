@@ -2,6 +2,7 @@
   "name": "changeit",
   "version": "1.5.9",
   "description": "ChangeIt - Firewall-Resilient Stealth Network Client",
+  "author": "hariharanboss <hariharanboss@users.noreply.github.com>",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -10,6 +11,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && electron .\"",
     "package:dir": "npm run build && electron-builder --dir",
     "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux AppImage deb",
     "release:ota": "powershell -ExecutionPolicy Bypass -File ./scripts/publish-ota.ps1"
   },
   "build": {
@@ -27,6 +29,16 @@
       "oneClick": true,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "electron/icon.png",
+      "category": "Network",
+      "synopsis": "Firewall-Resilient Stealth Network Client",
+      "description": "ChangeIt VPN client for secure, stealth connectivity."
     },
     "files": [
       "dist/**/*",

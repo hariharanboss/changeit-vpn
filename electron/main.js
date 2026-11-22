@@ -115,7 +115,30 @@ function readLogTail(file, maxBytes = 4000) {
   }
 }
 
-// ---- Windows system proxy --------------------------------------------------
+// ---- System proxy (Windows & Linux) ---------------------------------------
+
+function setSystemProxy(enable) {
+  if (process.platform === 'win32') {
+    setWindowsProxy(enable);
+  } else if (process.platform === 'linux') {
+    setLinuxProxy(enable);
+  }
+}
+
+function setLinuxProxy(enable) {
+  const mode = enable ? 'manual' : 'none';
+  try {
+    exec(`gsettings set org.gnome.system.proxy mode '${mode}'`, () => {});
+    if (enable) {
+      exec("gsettings set org.gnome.system.proxy.http host '127.0.0.1'", () => {});
+      exec("gsettings set org.gnome.system.proxy.http port 10809", () => {});
+      exec("gsettings set org.gnome.system.proxy.https host '127.0.0.1'", () => {});
+      exec("gsettings set org.gnome.system.proxy.https port 10809", () => {});
+      exec("gsettings set org.gnome.system.proxy.socks host '127.0.0.1'", () => {});
+      exec("gsettings set org.gnome.system.proxy.socks port 10808", () => {});
+    }
+  } catch (_) {}
+}
 
 function setWindowsProxy(enable) {
   const overrideList = '<local>;localhost;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*';
@@ -191,19 +214,31 @@ function readRegistryValue(name) {
 }
 
 async function healStaleProxy() {
-  // A crashed/force-killed earlier run can leave Windows pointed at our port
-  // with nothing listening, which looks like "the whole PC has no internet".
-  try {
-    const enabled = await readRegistryValue('ProxyEnable');
-    if (enabled !== '0x1') return;
-    const server = await readRegistryValue('ProxyServer');
-    if (!server || !server.includes(PROXY_SERVER)) return;
-    const listening = await waitForPort(HTTP_PROXY_PORT, 400);
-    if (!listening) {
-      logEvent('Detected stale system proxy with no tunnel running; restoring settings');
-      setWindowsProxy(false);
-    }
-  } catch (_) {}
+  if (process.platform === 'win32') {
+    try {
+      const enabled = await readRegistryValue('ProxyEnable');
+      if (enabled !== '0x1') return;
+      const server = await readRegistryValue('ProxyServer');
+      if (!server || !server.includes(PROXY_SERVER)) return;
+      const listening = await waitForPort(HTTP_PROXY_PORT, 400);
+      if (!listening) {
+        logEvent('Detected stale system proxy with no tunnel running; restoring settings');
+        setSystemProxy(false);
+      }
+    } catch (_) {}
+  } else if (process.platform === 'linux') {
+    try {
+      exec('gsettings get org.gnome.system.proxy mode', async (err, stdout) => {
+        if (!err && stdout && stdout.includes('manual')) {
+          const listening = await waitForPort(HTTP_PROXY_PORT, 400);
+          if (!listening) {
+            logEvent('Detected stale Linux system proxy; restoring settings');
+            setSystemProxy(false);
+          }
+        }
+      });
+    } catch (_) {}
+  }
 }
 
 // ---- Tunnel engine ---------------------------------------------------------
@@ -355,7 +390,7 @@ function spawnXray(exePath, configPath, cwd) {
       tunnelActive = false;
       if (!intentional && wasActive) {
         // Watchdog: the core died after the UI reported "connected".
-        setWindowsProxy(false);
+        setSystemProxy(false);
         sendToRenderer('vpn:status', {
           status: 'disconnected',
           error: 'The tunnel stopped unexpectedly and your internet settings were restored.'
@@ -377,9 +412,10 @@ function sendToRenderer(channel, payload) {
 async function startTunnel() {
   const paths = getXrayPaths();
   if (!paths) {
+    const binName = process.platform === 'win32' ? 'xray.exe' : 'xray';
     return {
       status: 'error',
-      error: 'Tunnel engine missing: bin\\xray\\xray.exe was not found. Re-extract the full ChangeIt ZIP (do not copy only ChangeIt.exe).'
+      error: `Tunnel engine missing: bin/xray/${binName} was not found.`
     };
   }
 
@@ -393,7 +429,7 @@ async function startTunnel() {
   logEvent(`Starting tunnel: ${paths.xrayExe}`);
   const spawned = await spawnXray(paths.xrayExe, prepared.path, paths.cwd);
   if (!spawned.ok) {
-    setWindowsProxy(false);
+    setSystemProxy(false);
     return { status: 'error', error: spawned.error, detail: spawned.detail, logPath: getXrayLogPath() };
   }
 
@@ -402,7 +438,7 @@ async function startTunnel() {
     const detail = readLogTail(getXrayLogPath());
     const error = lastSpawnError || classifyFailure(detail);
     stopXray();
-    setWindowsProxy(false);
+    setSystemProxy(false);
     return { status: 'error', error, detail, logPath: getXrayLogPath() };
   }
 
@@ -413,7 +449,7 @@ async function startTunnel() {
   if (!probe.ok) {
     const detail = readLogTail(getXrayLogPath());
     stopXray();
-    setWindowsProxy(false);
+    setSystemProxy(false);
     return {
       status: 'error',
       error: 'The tunnel engine started but no traffic could pass. The server may be blocked or down on this network.',
@@ -422,7 +458,7 @@ async function startTunnel() {
     };
   }
 
-  setWindowsProxy(true);
+  setSystemProxy(true);
   tunnelActive = true;
   logEvent(`Tunnel verified (${probe.detail}); system proxy enabled`);
   return {
@@ -535,14 +571,19 @@ function getXrayPaths() {
     path.join(app.getAppPath(), '..', 'bin', 'xray')
   ];
 
+  const binaryName = process.platform === 'win32' ? 'xray.exe' : 'xray';
   for (const p of possiblePaths) {
-    if (fs.existsSync(path.join(p, 'xray.exe'))) {
+    const fullPath = path.join(p, binaryName);
+    if (fs.existsSync(fullPath)) {
+      if (process.platform !== 'win32') {
+        try { fs.chmodSync(fullPath, 0o755); } catch (_) {}
+      }
       const localCfg = path.join(p, 'config.local.json');
       const stdCfg = path.join(p, 'config.json');
       const activeCfg = fs.existsSync(localCfg) ? localCfg : stdCfg;
 
       return {
-        xrayExe: path.join(p, 'xray.exe'),
+        xrayExe: fullPath,
         configJson: activeCfg,
         cwd: p
       };
@@ -832,17 +873,26 @@ ipcMain.handle('updater:apply', () => {
   isQuitting = true;
   // Never apply an update while the system proxy still points at a core we
   // are about to orphan; that is what leaves a machine with no internet.
-  setWindowsProxy(false);
+  setSystemProxy(false);
   stopXray();
   const targetAsar = path.join(process.resourcesPath, 'app.asar');
-  const batPath = path.join(os.tmpdir(), 'changeit_apply.bat');
-  const batContent = `@echo off\r\ntimeout /t 1 /nobreak >nul\r\ncopy /Y "${updateDownloadedPath}" "${targetAsar}"\r\ndel "${updateDownloadedPath}"\r\nstart "" "${process.execPath}"\r\ndel "%~f0"\r\n`;
-
-  fs.writeFileSync(batPath, batContent);
-  spawn('cmd.exe', ['/c', batPath], {
-    detached: true,
-    stdio: 'ignore'
-  }).unref();
+  if (process.platform === 'win32') {
+    const batPath = path.join(os.tmpdir(), 'changeit_apply.bat');
+    const batContent = `@echo off\r\ntimeout /t 1 /nobreak >nul\r\ncopy /Y "${updateDownloadedPath}" "${targetAsar}"\r\ndel "${updateDownloadedPath}"\r\nstart "" "${process.execPath}"\r\ndel "%~f0"\r\n`;
+    fs.writeFileSync(batPath, batContent);
+    spawn('cmd.exe', ['/c', batPath], {
+      detached: true,
+      stdio: 'ignore'
+    }).unref();
+  } else {
+    const shPath = path.join(os.tmpdir(), 'changeit_apply.sh');
+    const shContent = `#!/bin/sh\nsleep 1\ncp -f "${updateDownloadedPath}" "${targetAsar}"\nrm -f "${updateDownloadedPath}"\n"${process.execPath}" &\nrm -f "$0"\n`;
+    fs.writeFileSync(shPath, shContent, { mode: 0o755 });
+    spawn('/bin/sh', [shPath], {
+      detached: true,
+      stdio: 'ignore'
+    }).unref();
+  }
 
   setTimeout(() => app.exit(0), 500);
   return { success: true };
@@ -858,13 +908,13 @@ ipcMain.handle('vpn:connect', async () => {
   } catch (err) {
     logEvent(`connect failed: ${err.message}`);
     stopXray();
-    setWindowsProxy(false);
+    setSystemProxy(false);
     return { status: 'error', error: `Unexpected error: ${err.message}`, logPath: getXrayLogPath() };
   }
 });
 
 ipcMain.handle('vpn:disconnect', async () => {
-  setWindowsProxy(false);
+  setSystemProxy(false);
   stopXray(true);
   return { status: 'disconnected' };
 });
@@ -911,7 +961,7 @@ app.on('before-quit', () => {
 });
 
 app.on('will-quit', () => {
-  setWindowsProxy(false);
+  setSystemProxy(false);
   stopXray(true);
   if (tray) {
     try { tray.destroy(); } catch (_) {}
