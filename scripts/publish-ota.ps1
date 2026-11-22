@@ -41,16 +41,15 @@ npx asar pack $staging release\win-unpacked\resources\app.asar
 Copy-Item release\win-unpacked\resources\app.asar app.asar -Force
 Remove-Item -Recurse -Force $staging
 
-# Update local running instance
-$localInstall = "D:\Downloads (Chrome)\ChangeIt-v1.4.7-Windows-x64\resources\app.asar"
-if (Test-Path "D:\Downloads (Chrome)\ChangeIt-v1.4.7-Windows-x64\resources") {
-    Copy-Item release\win-unpacked\resources\app.asar $localInstall -Force
+# Update local test instance if configured in environment
+if ($env:CHANGEIT_LOCAL_DIR -and (Test-Path "$env:CHANGEIT_LOCAL_DIR\resources")) {
+    Copy-Item release\win-unpacked\resources\app.asar "$env:CHANGEIT_LOCAL_DIR\resources\app.asar" -Force
     Write-Host ">>> [OTA] Local test instance updated!" -ForegroundColor Green
 }
 
 # Ensure ChangeIt.exe has the latest icon embedded
-$rcedit = "C:\Users\dhanusha\AppData\Local\electron-builder\Cache\winCodeSign\425303339\rcedit-x64.exe"
-if (Test-Path $rcedit) {
+$rcedit = (Get-ChildItem -Path "$env:LOCALAPPDATA\electron-builder\Cache\winCodeSign" -Filter "rcedit-x64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName)
+if ($rcedit -and (Test-Path $rcedit)) {
     & $rcedit "release\win-unpacked\ChangeIt.exe" --set-icon "build\icon.ico" 2>$null
 }
 

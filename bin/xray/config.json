@@ -65,7 +65,7 @@
     "rules": [
       {
         "type": "field",
-        "port": "22,2222,20091",
+        "port": "22,2222",
         "outboundTag": "direct"
       },
       {

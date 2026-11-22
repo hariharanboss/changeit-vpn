@@ -21,7 +21,9 @@ NGINX_LOG = "/var/log/nginx/access.log"
 XRAY_LOG = "/var/log/xray/access.log"
 
 # Server loopback and internal gateway IPs to exclude
-SERVER_IPS = {"127.0.0.1", "::1", "135.125.222.22", "10.10.10.99"}
+SERVER_IPS = {"127.0.0.1", "::1", "localhost"}
+if os.environ.get("SERVER_IP"):
+    SERVER_IPS.add(os.environ["SERVER_IP"])
 
 # In-memory GeoIP cache to avoid duplicate HTTP lookups
 GEO_CACHE = {}
@@ -55,8 +57,8 @@ def init_db():
                 )
             ''')
             # Clean out local loopback artifacts
-            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
-            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip = '::1'")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip = '::1'")
             conn.commit()
     except Exception as e:
         print(f"init_db error: {e}")
@@ -183,8 +185,8 @@ def sync_logs():
         with sqlite3.connect(DB_PATH, timeout=5.0) as conn:
             c = conn.cursor()
             # Clean out local loopback artifacts
-            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
-            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip IN ('135.125.222.22', '10.10.10.99')")
+            c.execute("DELETE FROM users WHERE ip LIKE '%127.0.0.1%' OR ip = '::1'")
+            c.execute("DELETE FROM events WHERE ip LIKE '%127.0.0.1%' OR ip = '::1'")
 
             for client_ip, count in seen_ips.items():
                 c.execute("SELECT city, region, country, country_code, isp, first_seen FROM users WHERE ip = ?", (client_ip,))
