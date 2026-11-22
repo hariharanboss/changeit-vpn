@@ -13,3 +13,5 @@ config.endpoint.json
 *.jks
 *.keystore
 *.idsig
+__pycache__/
+*.pyc
