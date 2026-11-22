@@ -13,6 +13,14 @@
 <link rel="icon" type="image/png" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
 
+<!-- Google Fonts: DM Sans -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ChangeIt VPN">
@@ -87,320 +95,1124 @@
 </script>
 
 <style>
-  :root{
-    --bg:#050818; --bg2:#0a0e27; --card:#0d1230; --card-hover:#131a42; --line:#1c2554;
-    --text:#f1f5f9; --muted:#94a3b8; --accent:#7c5cff; --accent-glow:rgba(124,92,255,0.35);
-    --accent2:#a78bfa; --green:#10b981; --cyan:#38bdf8; --blue:#3b82f6;
+  :root {
+    --font-main: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --bg: #050818;
+    --bg2: #090e2b;
+    --card: #0d1338;
+    --card-hover: #131b4d;
+    --line: #1c265a;
+    --line-active: #3b4d99;
+    --text: #f1f5f9;
+    --text-bright: #ffffff;
+    --muted: #94a3b8;
+    --muted-dark: #64748b;
+    --accent: #7c5cff;
+    --accent-hover: #6a44ff;
+    --accent-glow: rgba(124, 92, 255, 0.35);
+    --accent2: #a78bfa;
+    --green: #10b981;
+    --green-bg: rgba(16, 185, 129, 0.12);
+    --cyan: #38bdf8;
+    --cyan-bg: rgba(56, 189, 248, 0.12);
+    --blue: #3b82f6;
   }
-  *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--accent2);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
-  
-  /* Header */
-  header{position:sticky;top:0;z-index:20;background:rgba(5,8,24,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:1.2rem;color:var(--text)}
-  .brand img{width:34px;height:34px;border-radius:9px;box-shadow:0 0 12px var(--accent-glow)}
-  .brand:hover{text-decoration:none}
-  .nav nav{display:flex;gap:24px;font-size:.95rem}
-  .nav nav a{color:var(--muted);transition:color .15s}
-  .nav nav a:hover{color:var(--text);text-decoration:none}
-  
-  /* Hero */
-  .hero{padding:80px 0 56px;text-align:center;background:radial-gradient(ellipse 85% 65% at 50% -15%,rgba(124,92,255,.26),transparent)}
-  .badge-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border:1px solid #2e3b75;border-radius:999px;background:rgba(13,18,48,0.7);color:var(--accent2);font-size:.85rem;font-weight:600;margin-bottom:24px;backdrop-filter:blur(8px)}
-  .badge-tag .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-  h1{font-size:clamp(2.1rem,5.5vw,3.5rem);line-height:1.15;font-weight:800;letter-spacing:-.025em;margin-bottom:20px}
-  h1 .grad{background:linear-gradient(90deg,var(--accent2),#60a5fa,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{max-width:760px;margin:0 auto 34px;color:var(--muted);font-size:1.12rem}
-  
-  .hero-cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;margin-bottom:24px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;border-radius:12px;font-weight:700;font-size:1rem;transition:all .15s;text-align:center}
-  .btn:hover{text-decoration:none;transform:translateY(-2px)}
-  .btn-primary{background:linear-gradient(135deg,var(--accent),#5236f5);color:#fff;box-shadow:0 10px 28px var(--accent-glow)}
-  .btn-primary:hover{box-shadow:0 14px 34px rgba(124,92,255,0.5)}
-  .btn-secondary{background:var(--card);border:1px solid var(--line);color:var(--text)}
-  .btn-secondary:hover{border-color:var(--accent2);background:var(--card-hover)}
-  .btn-sm{padding:10px 18px;font-size:.88rem;border-radius:10px}
-  
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+
+  body {
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Scroll target offset so header doesn't cover content */
+  section, .scroll-target {
+    scroll-margin-top: 88px;
+  }
+
+  a {
+    color: var(--accent2);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  a:hover {
+    color: var(--text-bright);
+    text-decoration: none;
+  }
+
+  .wrap {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Header & Navigation */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(5, 8, 24, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--text-bright);
+    letter-spacing: -0.02em;
+  }
+
+  .brand img {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    box-shadow: 0 0 16px var(--accent-glow);
+    display: block;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+  }
+
+  .nav-links a:hover {
+    color: var(--text-bright);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .nav-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+
+  .github-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--line-active);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  /* Hero Section */
+  .hero {
+    padding: 84px 0 60px;
+    text-align: center;
+    position: relative;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124, 92, 255, 0.28), transparent 75%);
+  }
+
+  .badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border: 1px solid #2e3a75;
+    border-radius: 999px;
+    background: rgba(13, 19, 56, 0.7);
+    color: var(--accent2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+
+  .badge-tag .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    display: inline-block;
+  }
+
+  h1 {
+    font-size: clamp(2.3rem, 5.5vw, 3.8rem);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    color: var(--text-bright);
+  }
+
+  h1 .grad {
+    background: linear-gradient(100deg, #c4b5fd 0%, #a78bfa 40%, #60a5fa 75%, #7c5cff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .sub {
+    max-width: 780px;
+    margin: 0 auto 36px;
+    color: var(--muted);
+    font-size: 1.15rem;
+    line-height: 1.65;
+  }
+
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, #5b3af5 100%);
+    color: #ffffff !important;
+    box-shadow: 0 10px 28px var(--accent-glow);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #8767ff 0%, #6948ff 100%);
+    box-shadow: 0 14px 34px rgba(124, 92, 255, 0.55);
+  }
+
+  .btn-secondary {
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--text-bright) !important;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent2);
+    background: var(--card-hover);
+  }
+
+  .btn-sm {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
   /* Linux 1-line command snippet */
-  .cmd-box{max-width:740px;margin:28px auto 0;background:rgba(10,14,39,0.92);border:1px solid #28346b;border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 32px rgba(0,0,0,0.45)}
-  .cmd-prompt{color:#a855f7;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88rem;user-select:none}
-  .cmd-text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem;color:var(--cyan);overflow-x:auto;white-space:nowrap;flex:1;text-align:left}
-  .cmd-copy{background:rgba(124,92,255,.2);border:1px solid var(--accent);color:#fff;border-radius:8px;padding:7px 16px;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0}
-  .cmd-copy:hover{background:var(--accent)}
-  .meta-note{color:var(--muted);font-size:.85rem;margin-top:16px}
-  
-  /* Sections */
-  section{padding:64px 0}
-  h2{font-size:1.85rem;font-weight:800;letter-spacing:-.015em;margin-bottom:8px;text-align:center}
-  .section-sub{text-align:center;color:var(--muted);margin-bottom:42px;font-size:1.02rem}
-  
-  /* Platforms Download Grid */
-  .platform-section{margin-bottom:48px}
-  .platform-heading{display:flex;align-items:center;gap:12px;margin-bottom:18px;font-size:1.25rem;font-weight:700;color:#fff}
-  .platform-heading .plat-icon{width:30px;height:30px;border-radius:8px;background:rgba(124,92,255,.15);display:inline-flex;align-items:center;justify-content:center;font-size:1.1rem}
-  .dl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
-  .dl-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;display:flex;flex-direction:column;gap:12px;position:relative;transition:all .18s;box-shadow:0 8px 24px rgba(0,0,0,0.25)}
-  .dl-card:hover{border-color:#3b498a;transform:translateY(-2px);background:var(--card-hover)}
-  .dl-card.featured{border-color:var(--accent);background:linear-gradient(180deg,rgba(124,92,255,0.08),var(--card))}
-  .dl-card .badge-rec{position:absolute;top:18px;right:18px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);color:var(--green);font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
-  .dl-card .badge-portable{position:absolute;top:18px;right:18px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);color:var(--cyan);font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
-  .dl-card h3{font-size:1.2rem;font-weight:700}
-  .dl-card .desc{color:var(--muted);font-size:.9rem}
-  .dl-card .meta-row{display:flex;gap:16px;font-size:.82rem;color:var(--muted);margin-bottom:4px}
-  .sha-box{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.68rem;color:var(--muted);word-break:break-all;background:var(--bg2);border:1px solid #1a224d;border-radius:8px;padding:10px}
-  .sha-box b{color:var(--accent2);display:block;font-size:.68rem;margin-bottom:4px}
-  
+  .cmd-box {
+    max-width: 780px;
+    margin: 0 auto;
+    background: rgba(9, 14, 43, 0.92);
+    border: 1px solid #233069;
+    border-radius: 14px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  }
+
+  .cmd-prompt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #c084fc;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88rem;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .cmd-text {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88rem;
+    color: var(--cyan);
+    overflow-x: auto;
+    white-space: nowrap;
+    flex: 1;
+    text-align: left;
+    scrollbar-width: thin;
+  }
+
+  .cmd-copy {
+    background: rgba(124, 92, 255, 0.2);
+    border: 1px solid var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cmd-copy:hover {
+    background: var(--accent);
+  }
+
+  .meta-note {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-top: 18px;
+  }
+
+  /* Platform Quick Filter Pills */
+  .platform-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 40px 0 20px;
+    flex-wrap: wrap;
+  }
+
+  .plat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+
+  .plat-pill:hover, .plat-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  /* Section Titles */
+  section {
+    padding: 80px 0;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 52px;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    color: var(--text-bright);
+  }
+
+  .section-sub {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  /* Platform Sections & Cards */
+  .platform-group {
+    margin-bottom: 56px;
+  }
+
+  .platform-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .platform-title-bar .plat-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(124, 92, 255, 0.18);
+    border: 1px solid rgba(124, 92, 255, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent2);
+  }
+
+  .dl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 22px;
+  }
+
+  .dl-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .dl-card:hover {
+    border-color: var(--line-active);
+    transform: translateY(-3px);
+    background: var(--card-hover);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  }
+
+  .dl-card.featured {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.1) 0%, var(--card) 100%);
+    box-shadow: 0 10px 30px rgba(124, 92, 255, 0.15);
+  }
+
+  .dl-card .badge-type {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .badge-type.rec {
+    background: var(--green-bg);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: var(--green);
+  }
+
+  .badge-type.portable {
+    background: var(--cyan-bg);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: var(--cyan);
+  }
+
+  .dl-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-right: 90px;
+  }
+
+  .dl-card .desc {
+    color: var(--muted);
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+
+  .dl-card .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 8px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .dl-card .meta-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sha-box {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    word-break: break-all;
+    background: var(--bg2);
+    border: 1px solid #1c2658;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .sha-box:hover {
+    border-color: var(--accent);
+    color: var(--text-bright);
+  }
+
+  .sha-box .sha-label {
+    color: var(--accent2);
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .sha-copy-icon {
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+
+  .sha-box:hover .sha-copy-icon {
+    color: var(--cyan);
+  }
+
   /* Features Grid */
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;transition:border-color .15s}
-  .card:hover{border-color:#2a3672}
-  .card h3{font-size:1.1rem;margin-bottom:10px;display:flex;align-items:center;gap:12px}
-  .card p{color:var(--muted);font-size:.92rem}
-  .ico{width:38px;height:38px;border-radius:10px;background:rgba(124,92,255,.16);display:inline-flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0}
-  
-  /* Steps */
-  .steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:22px}
-  .step-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
-  .step-card h3{display:flex;align-items:center;gap:10px;font-size:1.15rem;margin-bottom:16px}
-  .step-card ol{margin-left:22px;color:var(--muted);font-size:.93rem}
-  .step-card li{margin-bottom:10px}
-  .step-card code{background:var(--bg2);padding:2px 7px;border-radius:5px;color:var(--cyan);font-size:.82rem}
-  
-  /* FAQ */
-  .faq{max-width:840px;margin:0 auto}
-  details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;padding:18px 22px;transition:border-color .15s}
-  details:hover{border-color:#2d3a77}
-  summary{cursor:pointer;font-weight:700;font-size:1.02rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
-  summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";color:var(--accent2);font-size:1.35rem;font-weight:400}
-  details[open] summary::after{content:"–"}
-  details p{margin-top:14px;color:var(--muted);font-size:.95rem;line-height:1.65}
-  
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 28px;
+    transition: all 0.2s ease;
+  }
+
+  .feature-card:hover {
+    border-color: var(--line-active);
+    transform: translateY(-2px);
+    background: var(--card-hover);
+  }
+
+  .feature-card .feat-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(124, 92, 255, 0.16);
+    border: 1px solid rgba(124, 92, 255, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent2);
+    margin-bottom: 18px;
+  }
+
+  .feature-card h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 10px;
+  }
+
+  .feature-card p {
+    color: var(--muted);
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+
+  /* Installation Steps */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .step-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 30px;
+  }
+
+  .step-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .step-card-header .step-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(124, 92, 255, 0.18);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent2);
+  }
+
+  .step-card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .step-card ol {
+    margin-left: 22px;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .step-card li {
+    margin-bottom: 14px;
+    line-height: 1.55;
+  }
+
+  .step-card li b {
+    color: var(--text-bright);
+  }
+
+  .step-card code {
+    background: var(--bg2);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* FAQ Section */
+  .faq-container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .faq-item {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+  }
+
+  .faq-item:hover {
+    border-color: var(--line-active);
+  }
+
+  .faq-question {
+    padding: 20px 24px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-bright);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    user-select: none;
+  }
+
+  .faq-chevron {
+    color: var(--accent2);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .faq-item[open] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-answer {
+    padding: 0 24px 22px;
+    color: var(--muted);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    padding-top: 16px;
+  }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: #10b981;
+    color: #050818;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
   /* Footer */
-  footer{border-top:1px solid var(--line);padding:36px 0;color:var(--muted);font-size:.9rem}
-  .foot{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:center}
-  .foot-links{display:flex;gap:24px}
-  
-  @media(max-width:640px){
-    .nav nav{display:none}
-    .hero{padding:52px 0 40px}
-    .cmd-box{flex-direction:column;align-items:stretch}
-    .cmd-copy{align-self:flex-end}
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 42px 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    background: #030511;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .foot-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .foot-links {
+    display: flex;
+    gap: 28px;
+  }
+
+  .foot-links a {
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .foot-links a:hover {
+    color: var(--text-bright);
+  }
+
+  @media (max-width: 768px) {
+    .nav-links {
+      display: none;
+    }
+    .hero {
+      padding: 60px 0 44px;
+    }
+    .cmd-box {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .cmd-copy {
+      justify-content: center;
+    }
+    .dl-card h3 {
+      margin-right: 0;
+    }
+    .badge-type {
+      position: static;
+      align-self: flex-start;
+      margin-bottom: 6px;
+    }
   }
 </style>
 </head>
 <body>
 
+<!-- Header Navigation -->
 <header>
   <div class="wrap nav">
-    <a class="brand" href="#top"><img src="assets/icon.png" alt="ChangeIt VPN logo">ChangeIt VPN</a>
-    <nav>
-      <a href="#download">Downloads</a>
-      <a href="#features">Features</a>
-      <a href="#install">Instructions</a>
-      <a href="#faq">FAQ</a>
-      <a href="https://github.com/hariharanboss/changeit-vpn" rel="noopener">GitHub</a>
+    <a class="brand" href="#top">
+      <img src="assets/icon.png" alt="ChangeIt VPN logo">
+      <span>ChangeIt VPN</span>
+    </a>
+    
+    <nav class="nav-links">
+      <a href="#windows"><i data-lucide="monitor"></i> Windows</a>
+      <a href="#android"><i data-lucide="smartphone"></i> Android</a>
+      <a href="#linux"><i data-lucide="terminal"></i> Linux</a>
+      <a href="#features"><i data-lucide="sparkles"></i> Features</a>
+      <a href="#install"><i data-lucide="book-open"></i> Instructions</a>
+      <a href="#faq"><i data-lucide="help-circle"></i> FAQ</a>
     </nav>
+
+    <div class="nav-cta">
+      <a class="github-btn" href="https://github.com/hariharanboss/changeit-vpn" target="_blank" rel="noopener noreferrer">
+        <i data-lucide="github"></i>
+        <span>GitHub</span>
+      </a>
+    </div>
   </div>
 </header>
 
 <main id="top">
-  <div class="hero">
+  <!-- Hero Section -->
+  <section class="hero">
     <div class="wrap">
       <div class="badge-tag">
         <span class="dot"></span>
         <span>v1.5.9 Released &nbsp;•&nbsp; Free &amp; Open Source</span>
       </div>
+      
       <h1>ChangeIt VPN — <span class="grad">Stealth Tunnel</span><br>for Windows, Android &amp; Linux</h1>
-      <p class="sub">Tunnels Layer 3 network traffic inside encrypted TLS&nbsp;1.3 / WebSocket over port&nbsp;443. Indistinguishable from standard HTTPS browsing—purpose-built to bypass restrictive university, hostel, and corporate firewalls.</p>
+      
+      <p class="sub">Tunnels Layer 3 network traffic inside encrypted TLS&nbsp;1.3 / WebSocket over port&nbsp;443. Indistinguishable from standard HTTPS web browsing—purpose-built to bypass restrictive university, hostel, and corporate firewalls.</p>
       
       <div class="hero-cta">
-        <a class="btn btn-primary" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Setup-1.5.9.exe">
-          🪟 Download for Windows (.exe)
+        <a class="btn btn-primary" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Setup-1.5.9.exe" onclick="showToast('Downloading ChangeIt-Setup-1.5.9.exe...')">
+          <i data-lucide="download"></i>
+          <span>Download for Windows (.exe)</span>
         </a>
-        <a class="btn btn-secondary" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-arm64.apk">
-          📱 Android APK
+        <a class="btn btn-secondary" href="#android">
+          <i data-lucide="smartphone"></i>
+          <span>Android APK</span>
         </a>
         <a class="btn btn-secondary" href="#linux">
-          🐧 Linux Install
+          <i data-lucide="terminal"></i>
+          <span>Linux Terminal</span>
         </a>
       </div>
 
       <!-- Linux 1-line command snippet box -->
-      <div class="cmd-box" id="linux">
-        <span class="cmd-prompt">Linux Terminal $</span>
+      <div class="cmd-box">
+        <span class="cmd-prompt"><i data-lucide="terminal"></i> Linux $</span>
         <code class="cmd-text" id="linux-cmd">curl -fsSL https://raw.githubusercontent.com/hariharanboss/changeit-vpn/main/changeit-desktop/install-linux.sh | bash</code>
-        <button class="cmd-copy" id="copy-btn" onclick="copyLinuxCmd()">Copy</button>
+        <button class="cmd-copy" id="copy-btn" onclick="copyLinuxCmd()">
+          <i data-lucide="copy" id="copy-icon"></i>
+          <span id="copy-text">Copy</span>
+        </button>
       </div>
 
       <p class="meta-note">Windows 10/11 x64 &nbsp;·&nbsp; Android 7.0+ &nbsp;·&nbsp; Linux (Ubuntu/Debian/Mint/Arch/Fedora) &nbsp;·&nbsp; MIT Licensed</p>
+
+      <!-- Quick Platform Jump Pills -->
+      <div class="platform-nav">
+        <a class="plat-pill active" href="#windows"><i data-lucide="monitor"></i> Windows</a>
+        <a class="plat-pill" href="#android"><i data-lucide="smartphone"></i> Android</a>
+        <a class="plat-pill" href="#linux"><i data-lucide="terminal"></i> Linux</a>
+        <a class="plat-pill" href="#features"><i data-lucide="sparkles"></i> All Features</a>
+      </div>
     </div>
-  </div>
+  </section>
 
   <!-- Downloads Section -->
   <section id="download" style="background:var(--bg2)">
     <div class="wrap">
-      <h2>Download ChangeIt VPN v1.5.9</h2>
-      <p class="section-sub">Signed, clean releases directly from GitHub. Choose your operating system below.</p>
+      <div class="section-header">
+        <h2>Download ChangeIt VPN v1.5.9</h2>
+        <p class="section-sub">Direct, clean builds from our official GitHub release. Select your operating system below to get started immediately.</p>
+      </div>
 
       <!-- 1. Windows Section -->
-      <div class="platform-section">
-        <div class="platform-heading">
-          <span class="plat-icon">🪟</span>
+      <div class="platform-group scroll-target" id="windows">
+        <div class="platform-title-bar">
+          <div class="plat-icon-badge"><i data-lucide="monitor"></i></div>
           <span>Windows (10 &amp; 11 64-bit)</span>
         </div>
         <div class="dl-grid">
           
+          <!-- Windows Installer (.exe) -->
           <div class="dl-card featured">
-            <span class="badge-rec">Recommended</span>
+            <span class="badge-type rec"><i data-lucide="check"></i> Recommended</span>
             <h3>ChangeIt-Setup-1.5.9.exe</h3>
-            <p class="desc">1-Click standard Windows installer. Automatically installs desktop &amp; Start menu shortcuts and sets up the stealth engine.</p>
+            <p class="desc">1-Click standard Windows installer. Automatically installs desktop &amp; Start menu shortcuts and provisions the background stealth engine.</p>
             <div class="meta-row">
-              <span>📦 116.5 MB</span>
-              <span>⚡ 1-Click Setup</span>
-              <span>🔄 In-App Updates</span>
+              <span><i data-lucide="package"></i> 116.5 MB</span>
+              <span><i data-lucide="zap"></i> 1-Click Setup</span>
+              <span><i data-lucide="refresh-cw"></i> In-App Updates</span>
             </div>
-            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Setup-1.5.9.exe">⬇ Download Installer (.exe)</a>
-            <div class="sha-box"><b>SHA-256</b>5d38e7dd737266d3cd689499a9a34df1713d688aa12de1470dbd193bc63ba361</div>
+            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Setup-1.5.9.exe" onclick="showToast('Downloading ChangeIt-Setup-1.5.9.exe...')">
+              <i data-lucide="download"></i>
+              <span>Download Installer (.exe)</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('5d38e7dd737266d3cd689499a9a34df1713d688aa12de1470dbd193bc63ba361')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>5d38e7dd737266d3cd689499a9a34df1713d688aa12de1470dbd193bc63ba361</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
+          <!-- Windows Portable (.zip) -->
           <div class="dl-card">
-            <span class="badge-portable">Portable</span>
+            <span class="badge-type portable"><i data-lucide="folder-archive"></i> Portable</span>
             <h3>ChangeIt-v1.5.9-Windows-x64.zip</h3>
-            <p class="desc">Standalone portable ZIP archive. Extract to any directory or USB drive and launch <code>ChangeIt.exe</code> directly.</p>
+            <p class="desc">Standalone portable ZIP archive. Extract to any directory or USB drive and launch <code>ChangeIt.exe</code> directly without installation.</p>
             <div class="meta-row">
-              <span>📦 125.4 MB</span>
-              <span>📂 No Installation Needed</span>
+              <span><i data-lucide="package"></i> 125.4 MB</span>
+              <span><i data-lucide="folder"></i> Zero Registry Footprint</span>
             </div>
-            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-v1.5.9-Windows-x64.zip">⬇ Download ZIP</a>
-            <div class="sha-box"><b>SHA-256</b>d80967afe1a0f814d48d9ce13efb93439339536100f6811f4f0f3c9dd40dc08e</div>
+            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-v1.5.9-Windows-x64.zip" onclick="showToast('Downloading ChangeIt Portable ZIP...')">
+              <i data-lucide="download"></i>
+              <span>Download ZIP</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('d80967afe1a0f814d48d9ce13efb93439339536100f6811f4f0f3c9dd40dc08e')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>d80967afe1a0f814d48d9ce13efb93439339536100f6811f4f0f3c9dd40dc08e</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
         </div>
       </div>
 
       <!-- 2. Android Section -->
-      <div class="platform-section">
-        <div class="platform-heading">
-          <span class="plat-icon">📱</span>
+      <div class="platform-group scroll-target" id="android">
+        <div class="platform-title-bar">
+          <div class="plat-icon-badge"><i data-lucide="smartphone"></i></div>
           <span>Android (Phones, Tablets &amp; TV)</span>
         </div>
         <div class="dl-grid">
           
+          <!-- Android ARM64 -->
           <div class="dl-card featured">
-            <span class="badge-rec">Recommended</span>
+            <span class="badge-type rec"><i data-lucide="check"></i> Recommended</span>
             <h3>ChangeIt-arm64.apk</h3>
             <p class="desc">Optimized 64-bit APK for modern smartphones with Proton-style dark OLED home screen widget &amp; app shortcuts.</p>
             <div class="meta-row">
-              <span>📦 31.3 MB</span>
-              <span>📱 Android 7.0+ (ARM64)</span>
+              <span><i data-lucide="package"></i> 31.3 MB</span>
+              <span><i data-lucide="smartphone"></i> Android 7.0+ (ARM64)</span>
             </div>
-            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-arm64.apk">⬇ Download APK</a>
-            <div class="sha-box"><b>SHA-256</b>c117de3cfb4a40b775568c6b448878f2fe69353d79f23739b49c4d4b12fb72cf</div>
+            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-arm64.apk" onclick="showToast('Downloading ChangeIt-arm64.apk...')">
+              <i data-lucide="download"></i>
+              <span>Download APK</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('c117de3cfb4a40b775568c6b448878f2fe69353d79f23739b49c4d4b12fb72cf')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>c117de3cfb4a40b775568c6b448878f2fe69353d79f23739b49c4d4b12fb72cf</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
+          <!-- Android Universal -->
           <div class="dl-card">
-            <span class="badge-portable">All Devices</span>
+            <span class="badge-type portable"><i data-lucide="layers"></i> All Devices</span>
             <h3>ChangeIt-Universal.apk</h3>
             <p class="desc">Universal binary compatible with all Android architectures including older devices, 32-bit ARM, and x86 emulators.</p>
             <div class="meta-row">
-              <span>📦 68.9 MB</span>
-              <span>📱 Universal Compatibility</span>
+              <span><i data-lucide="package"></i> 68.9 MB</span>
+              <span><i data-lucide="cpu"></i> All Architectures</span>
             </div>
-            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Universal.apk">⬇ Download APK</a>
-            <div class="sha-box"><b>SHA-256</b>cd5249adcaf86079c2da1104f735edb8b5248eecece73e9163452a7d0700e2c1</div>
+            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-Universal.apk" onclick="showToast('Downloading ChangeIt Universal APK...')">
+              <i data-lucide="download"></i>
+              <span>Download APK</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('cd5249adcaf86079c2da1104f735edb8b5248eecece73e9163452a7d0700e2c1')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>cd5249adcaf86079c2da1104f735edb8b5248eecece73e9163452a7d0700e2c1</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
         </div>
       </div>
 
       <!-- 3. Linux Section -->
-      <div class="platform-section">
-        <div class="platform-heading">
-          <span class="plat-icon">🐧</span>
+      <div class="platform-group scroll-target" id="linux">
+        <div class="platform-title-bar">
+          <div class="plat-icon-badge"><i data-lucide="terminal"></i></div>
           <span>Linux (Debian, Ubuntu, Arch, Fedora &amp; Mint)</span>
         </div>
         <div class="dl-grid">
           
+          <!-- Linux Deb -->
           <div class="dl-card featured">
-            <span class="badge-rec">Debian / Ubuntu / Mint</span>
+            <span class="badge-type rec"><i data-lucide="check"></i> Debian / Ubuntu / Mint</span>
             <h3>ChangeIt-1.5.9-amd64.deb</h3>
             <p class="desc">Native Debian package. Installs system binaries to <code>/opt/changeit</code>, creates desktop entry, and adds <code>changeit</code> to terminal PATH.</p>
             <div class="meta-row">
-              <span>📦 103.6 MB</span>
-              <span>🐧 .deb package</span>
+              <span><i data-lucide="package"></i> 103.6 MB</span>
+              <span><i data-lucide="box"></i> Native Package</span>
             </div>
-            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-1.5.9-amd64.deb">⬇ Download .deb</a>
-            <div class="sha-box"><b>SHA-256</b>893eb85720eb9b67c8056d996b4c70bf22f6d1599c141a9995e03dc9e006bada</div>
+            <a class="btn btn-primary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-1.5.9-amd64.deb" onclick="showToast('Downloading ChangeIt .deb...')">
+              <i data-lucide="download"></i>
+              <span>Download .deb</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('893eb85720eb9b67c8056d996b4c70bf22f6d1599c141a9995e03dc9e006bada')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>893eb85720eb9b67c8056d996b4c70bf22f6d1599c141a9995e03dc9e006bada</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
+          <!-- Linux AppImage -->
           <div class="dl-card">
-            <span class="badge-portable">Universal Linux</span>
+            <span class="badge-type portable"><i data-lucide="rocket"></i> Universal Linux</span>
             <h3>ChangeIt-1.5.9-x86_64.AppImage</h3>
             <p class="desc">Single-file standalone executable that runs directly on Arch, Fedora, openSUSE, or any modern Linux distribution.</p>
             <div class="meta-row">
-              <span>📦 124.8 MB</span>
-              <span>🚀 Standalone Executable</span>
+              <span><i data-lucide="package"></i> 124.8 MB</span>
+              <span><i data-lucide="file-code"></i> Standalone Executable</span>
             </div>
-            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-1.5.9-x86_64.AppImage">⬇ Download AppImage</a>
-            <div class="sha-box"><b>SHA-256</b>5c9350f6dc8d92ad058a98dfaed75d480f83ce442a95cf026933bb66d75d375e</div>
+            <a class="btn btn-secondary btn-sm" href="https://github.com/hariharanboss/changeit-vpn/releases/download/v1.5.9/ChangeIt-1.5.9-x86_64.AppImage" onclick="showToast('Downloading ChangeIt AppImage...')">
+              <i data-lucide="download"></i>
+              <span>Download AppImage</span>
+            </a>
+            <div class="sha-box" onclick="copyHash('5c9350f6dc8d92ad058a98dfaed75d480f83ce442a95cf026933bb66d75d375e')">
+              <div>
+                <span class="sha-label">SHA-256 (Click to copy)</span>
+                <span>5c9350f6dc8d92ad058a98dfaed75d480f83ce442a95cf026933bb66d75d375e</span>
+              </div>
+              <i data-lucide="copy" class="sha-copy-icon"></i>
+            </div>
           </div>
 
         </div>
       </div>
 
-      <p class="meta-note" style="text-align:center;margin-top:24px">All build assets &amp; checksums: <a href="https://github.com/hariharanboss/changeit-vpn/releases/latest" rel="noopener">github.com/hariharanboss/changeit-vpn/releases</a></p>
+      <p class="meta-note" style="text-align:center;margin-top:24px">All release assets &amp; checksums: <a href="https://github.com/hariharanboss/changeit-vpn/releases/latest" target="_blank" rel="noopener noreferrer">github.com/hariharanboss/changeit-vpn/releases</a></p>
     </div>
   </section>
 
-  <!-- Features -->
+  <!-- Features Section -->
   <section id="features">
     <div class="wrap">
-      <h2>Engineered For Restrictive Networks</h2>
-      <p class="section-sub">Why ChangeIt VPN connects when WireGuard, OpenVPN, and WARP fail.</p>
-      <div class="grid">
-        <div class="card">
-          <h3><span class="ico">🛡</span> Stealth TLS 1.3 Tunnel</h3>
+      <div class="section-header">
+        <h2>Engineered For Restrictive Networks</h2>
+        <p class="section-sub">Why ChangeIt VPN connects effortlessly when WireGuard, OpenVPN, and WARP fail.</p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="shield-check"></i></div>
+          <h3>Stealth TLS 1.3 Tunnel</h3>
           <p>Wraps network packets into standard HTTPS WebSocket on port 443. Firewalls and Deep Packet Inspection (DPI) see ordinary encrypted web browsing.</p>
         </div>
-        <div class="card">
-          <h3><span class="ico">🪟</span> 1-Click Windows .EXE</h3>
+
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="download-cloud"></i></div>
+          <h3>1-Click Windows .EXE</h3>
           <p>Brand new native installer creates desktop icons and automatically provisions the background core. No zip files or manual folder extractions required.</p>
         </div>
-        <div class="card">
-          <h3><span class="ico">📱</span> OLED Widget &amp; Shortcuts</h3>
+
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="layout-grid"></i></div>
+          <h3>OLED Widget &amp; Shortcuts</h3>
           <p>Proton-style dark 1-tap connect widget for your home screen, with OnePlus/Android launcher shortcuts and instant notification disconnect sync.</p>
         </div>
-        <div class="card">
-          <h3><span class="ico">🐧</span> Native Linux Ecosystem</h3>
+
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="cpu"></i></div>
+          <h3>Native Linux Ecosystem</h3>
           <p>1-line automated curl installer, native <code>.deb</code> package for Ubuntu/Debian, and standalone <code>.AppImage</code> for any Linux distribution.</p>
         </div>
-        <div class="card">
-          <h3><span class="ico">🔄</span> In-App Manual Updates</h3>
+
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="refresh-cw"></i></div>
+          <h3>In-App Manual Updates</h3>
           <p>On-demand manual update checker <code>[⟳]</code> right beside the version badge with lightweight instant hot-patching via <code>app.asar</code>.</p>
         </div>
-        <div class="card">
-          <h3><span class="ico">🔒</span> Zero-Logging &amp; Open Source</h3>
+
+        <div class="feature-card">
+          <div class="feat-icon-box"><i data-lucide="lock"></i></div>
+          <h3>Zero-Logging &amp; Open Source</h3>
           <p>MIT licensed source code, stateless routing with zero DNS leaks, no accounts, no subscriptions, and verified 0/93 clean on VirusTotal.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Instructions -->
+  <!-- Installation Steps Section -->
   <section id="install" style="background:var(--bg2)">
     <div class="wrap">
-      <h2>Simple Setup Guides</h2>
-      <p class="section-sub">Up and running in under two minutes.</p>
+      <div class="section-header">
+        <h2>Simple Setup Guides</h2>
+        <p class="section-sub">Get connected in under two minutes on any operating system.</p>
+      </div>
+
       <div class="steps-grid">
-        
+        <!-- Windows Setup -->
         <div class="step-card">
-          <h3>🪟 Windows Setup</h3>
+          <div class="step-card-header">
+            <div class="step-badge"><i data-lucide="monitor"></i></div>
+            <h3>Windows Setup</h3>
+          </div>
           <ol>
             <li>Download <b>ChangeIt-Setup-1.5.9.exe</b>.</li>
             <li>Double-click the installer — it installs automatically and places an icon on your Desktop.</li>
@@ -409,18 +1221,26 @@
           </ol>
         </div>
 
+        <!-- Android Setup -->
         <div class="step-card">
-          <h3>📱 Android Setup</h3>
+          <div class="step-card-header">
+            <div class="step-badge"><i data-lucide="smartphone"></i></div>
+            <h3>Android Setup</h3>
+          </div>
           <ol>
             <li>Download <b>ChangeIt-arm64.apk</b> (or Universal).</li>
             <li>Tap the APK to install; allow unknown sources if prompted.</li>
             <li>Launch app and accept Android's one-time VPN prompt.</li>
-            <li>Long-press the app icon to add the <b>Home Widget</b>.</li>
+            <li>Long-press the app icon to pin the <b>Home Widget</b>.</li>
           </ol>
         </div>
 
+        <!-- Linux Setup -->
         <div class="step-card">
-          <h3>🐧 Linux Setup</h3>
+          <div class="step-card-header">
+            <div class="step-badge"><i data-lucide="terminal"></i></div>
+            <h3>Linux Setup</h3>
+          </div>
           <ol>
             <li>Run the 1-line command in your terminal:<br>
               <code>curl -fsSL https://raw.githubusercontent.com/hariharanboss/changeit-vpn/main/changeit-desktop/install-linux.sh | bash</code>
@@ -429,70 +1249,148 @@
             <li>Launch from application menu or terminal (<code>changeit</code>).</li>
           </ol>
         </div>
-
       </div>
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- FAQ Section -->
   <section id="faq">
     <div class="wrap">
-      <h2>Frequently Asked Questions</h2>
-      <p class="section-sub">Everything you need to know about ChangeIt VPN.</p>
-      <div class="faq">
-        <details open>
-          <summary>How do I install ChangeIt VPN on Windows?</summary>
-          <p>Download <b>ChangeIt-Setup-1.5.9.exe</b> and double-click to install. It sets up everything automatically, adds desktop and Start menu shortcuts, and starts right away. If you prefer not to install anything on your system, download the portable ZIP instead.</p>
+      <div class="section-header">
+        <h2>Frequently Asked Questions</h2>
+        <p class="section-sub">Everything you need to know about ChangeIt VPN.</p>
+      </div>
+
+      <div class="faq-container">
+        <details class="faq-item" open>
+          <summary class="faq-question">
+            <span>How do I install ChangeIt VPN on Windows?</span>
+            <i data-lucide="chevron-down" class="faq-chevron"></i>
+          </summary>
+          <div class="faq-answer">
+            Download <b>ChangeIt-Setup-1.5.9.exe</b> and double-click to install. It sets up everything automatically, adds desktop and Start menu shortcuts, and starts right away. If you prefer not to install anything on your system, download the portable ZIP instead.
+          </div>
         </details>
-        <details>
-          <summary>What is ChangeIt VPN?</summary>
-          <p>ChangeIt VPN is a free, open-source stealth VPN and proxy client for Windows, Android, and Linux. It wraps traffic in TLS / WebSocket encrypted tunnels over port 443 so it resembles ordinary HTTPS browsing, helping it work on restrictive college, campus and enterprise networks.</p>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>What is ChangeIt VPN?</span>
+            <i data-lucide="chevron-down" class="faq-chevron"></i>
+          </summary>
+          <div class="faq-answer">
+            ChangeIt VPN is a free, open-source stealth VPN and proxy client for Windows, Android, and Linux. It wraps traffic in TLS / WebSocket encrypted tunnels over port 443 so it resembles ordinary HTTPS browsing, helping it work on restrictive college, campus and enterprise networks.
+          </div>
         </details>
-        <details>
-          <summary>Is ChangeIt VPN free?</summary>
-          <p>Yes. ChangeIt VPN is completely free to download and use. The full source code is published under the MIT license on GitHub with zero ads, tracking, or accounts.</p>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Is ChangeIt VPN free?</span>
+            <i data-lucide="chevron-down" class="faq-chevron"></i>
+          </summary>
+          <div class="faq-answer">
+            Yes. ChangeIt VPN is completely free to download and use. The full source code is published under the MIT license on GitHub with zero ads, tracking, or accounts.
+          </div>
         </details>
-        <details>
-          <summary>Does ChangeIt VPN work on college or university WiFi?</summary>
-          <p>It is specifically built for restrictive environments. Because the tunnel uses standard TLS / WebSocket on port 443, institutional firewalls cannot distinguish it from normal HTTPS traffic. The client validates the tunnel and automatically provides real-time diagnostics.</p>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Does ChangeIt VPN work on college or university WiFi?</span>
+            <i data-lucide="chevron-down" class="faq-chevron"></i>
+          </summary>
+          <div class="faq-answer">
+            It is specifically built for restrictive environments. Because the tunnel uses standard TLS / WebSocket on port 443, institutional firewalls cannot distinguish it from normal HTTPS traffic. The client validates the tunnel and automatically provides real-time diagnostics.
+          </div>
         </details>
-        <details>
-          <summary>What is new in v1.5.9?</summary>
-          <p>v1.5.9 introduces the native Windows 1-click <code>.exe</code> installer, official Linux support (1-line installer, native .deb, and AppImage), immediate notification disconnect synchronization on Android, clean long-press app shortcuts with direct widget pinning, manual check-for-updates button <code>[⟳]</code>, and dynamic desktop version display.</p>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>What is new in v1.5.9?</span>
+            <i data-lucide="chevron-down" class="faq-chevron"></i>
+          </summary>
+          <div class="faq-answer">
+            v1.5.9 introduces the native Windows 1-click <code>.exe</code> installer, official Linux support (1-line installer, native .deb, and AppImage), immediate notification disconnect synchronization on Android, clean long-press app shortcuts with direct widget pinning, manual check-for-updates button <code>[⟳]</code>, and dynamic desktop version display.
+          </div>
         </details>
       </div>
     </div>
   </section>
 </main>
 
+<!-- Toast Notification Element -->
+<div class="toast" id="toast">
+  <i data-lucide="check-circle-2"></i>
+  <span id="toast-msg">Copied!</span>
+</div>
+
+<!-- Footer -->
 <footer>
   <div class="wrap foot">
-    <span>© 2026 ChangeIt VPN · MIT License</span>
-    <span class="foot-links">
-      <a href="https://github.com/hariharanboss/changeit-vpn" rel="noopener">GitHub</a>
-      <a href="https://github.com/hariharanboss/changeit-vpn/releases/latest" rel="noopener">Releases</a>
-      <a href="https://github.com/hariharanboss/changeit-vpn/issues" rel="noopener">Support</a>
+    <div class="foot-brand">
+      <img src="assets/icon.png" alt="ChangeIt logo" style="width:24px;height:24px;border-radius:6px">
+      <span>ChangeIt VPN · MIT License</span>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/hariharanboss/changeit-vpn" target="_blank" rel="noopener noreferrer"><i data-lucide="github"></i> GitHub</a>
+      <a href="https://github.com/hariharanboss/changeit-vpn/releases/latest" target="_blank" rel="noopener noreferrer"><i data-lucide="package"></i> Releases</a>
+      <a href="https://github.com/hariharanboss/changeit-vpn/issues" target="_blank" rel="noopener noreferrer"><i data-lucide="life-buoy"></i> Support</a>
     </div>
   </div>
 </footer>
 
 <script>
+// Initialize Lucide Icons
+document.addEventListener("DOMContentLoaded", function () {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+});
+
+// Toast notification helper
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toast-msg');
+  toastMsg.innerText = msg;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+// Copy Linux Command helper
 function copyLinuxCmd() {
   const cmd = document.getElementById('linux-cmd').innerText;
   navigator.clipboard.writeText(cmd).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.innerText = 'Copied!';
-    btn.style.background = '#10b981';
-    btn.style.borderColor = '#10b981';
-    btn.style.color = '#050818';
+    const copyText = document.getElementById('copy-text');
+    const copyBtn = document.getElementById('copy-btn');
+    copyText.innerText = 'Copied!';
+    copyBtn.style.background = '#10b981';
+    copyBtn.style.borderColor = '#10b981';
+    copyBtn.style.color = '#050818';
+    showToast('Terminal command copied to clipboard!');
+    
     setTimeout(() => {
-      btn.innerText = 'Copy';
-      btn.style.background = 'rgba(124,92,255,.2)';
-      btn.style.borderColor = 'var(--accent)';
-      btn.style.color = '#fff';
+      copyText.innerText = 'Copy';
+      copyBtn.style.background = 'rgba(124,92,255,0.2)';
+      copyBtn.style.borderColor = 'var(--accent)';
+      copyBtn.style.color = '#fff';
     }, 2500);
   });
 }
+
+// Copy SHA256 Hash helper
+function copyHash(hash) {
+  navigator.clipboard.writeText(hash).then(() => {
+    showToast('SHA-256 hash copied to clipboard!');
+  });
+}
+
+// Smooth scroll pill active toggle
+document.querySelectorAll('.plat-pill').forEach(pill => {
+  pill.addEventListener('click', function(e) {
+    document.querySelectorAll('.plat-pill').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
 </script>
 
 </body>
