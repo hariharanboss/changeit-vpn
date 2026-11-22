@@ -99,10 +99,19 @@ gh release view $tag 2>$null
 $viewExit = $LASTEXITCODE
 $ErrorActionPreference = $prevEAP
 
+$setupExe = "release\ChangeIt-Setup-$Version.exe"
+if (-not (Test-Path $setupExe) -and (Test-Path "release\ChangeIt Setup $Version.exe")) {
+    Copy-Item "release\ChangeIt Setup $Version.exe" $setupExe -Force
+}
+$assetsToUpload = @("app.asar", $zipPath)
+if (Test-Path $setupExe) {
+    $assetsToUpload += $setupExe
+}
+
 if ($viewExit -ne 0) {
-    gh release create $tag app.asar $zipPath --title "ChangeIt v$Version (Verified Connect & Real Diagnostics)" --notes "### ChangeIt v$Version`n`n- **Verified connect**: the app now waits for the tunnel core to listen, sends a real probe through it, and only then reports Connected.`n- **Honest failures**: antivirus blocks, missing core files, port conflicts, and unreachable servers are reported with plain-English guidance.`n- **Automatic rollback**: system proxy is restored if the tunnel fails or dies, and stale proxy settings are healed on startup.`n- **Diagnostics panel + logs** at %APPDATA%\\ChangeIt\\logs.`n- **Single-instance lock** prevents two copies from fighting over ports.`n- **Packaging guard**: releases are refused unless the runnable core is included."
+    gh release create $tag $assetsToUpload --title "ChangeIt v$Version (Verified Connect & Real Diagnostics)" --notes "### ChangeIt v$Version`n`n- **Verified connect**: the app now waits for the tunnel core to listen, sends a real probe through it, and only then reports Connected.`n- **Honest failures**: antivirus blocks, missing core files, port conflicts, and unreachable servers are reported with plain-English guidance.`n- **Automatic rollback**: system proxy is restored if the tunnel fails or dies, and stale proxy settings are healed on startup.`n- **Diagnostics panel + logs** at %APPDATA%\\ChangeIt\\logs.`n- **Single-instance lock** prevents two copies from fighting over ports.`n- **Packaging guard**: releases are refused unless the runnable core is included."
 } else {
-    gh release upload $tag app.asar $zipPath --clobber
+    gh release upload $tag $assetsToUpload --clobber
 }
 
 Write-Host ">>> [OTA] Successfully published OTA release for $tag!" -ForegroundColor Green
