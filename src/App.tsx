@@ -5,6 +5,7 @@ import {
   SlidersHorizontal, 
   Sparkles,
   AlertTriangle,
+  RefreshCw,
   X
 } from 'lucide-react';
 import { DEFAULT_PROFILES } from './constants/servers';
@@ -46,6 +47,9 @@ export const App: React.FC = () => {
   const [killSwitchEnabled, setKillSwitchEnabled] = useState(true);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
   const [updateInfo, setUpdateInfo] = useState<{ version: string } | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('1.5.9');
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatusMsg, setUpdateStatusMsg] = useState<string | null>(null);
   const [failure, setFailure] = useState<ConnectionFailure | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [diagnostics, setDiagnostics] = useState<TunnelDiagnostics | null>(null);
@@ -69,14 +73,19 @@ export const App: React.FC = () => {
         }
       }).catch(() => {});
 
-      // 2. Check initial updater status
+      // 2. Fetch app version
+      electron.ipcRenderer.invoke('app:get-version').then((v: string) => {
+        if (v) setAppVersion(v);
+      }).catch(() => {});
+
+      // 3. Check initial updater status
       electron.ipcRenderer.invoke('updater:get-status').then((res: { ready: boolean; version: string } | null) => {
         if (res && res.ready) {
           setUpdateInfo({ version: res.version });
         }
       }).catch(() => {});
 
-      // 3. Listen for OTA update download completion
+      // 4. Listen for OTA update download completion
       const handleUpdateReady = (_event: any, data: { version: string }) => {
         if (data && data.version) {
           setUpdateInfo({ version: data.version });
@@ -104,6 +113,33 @@ export const App: React.FC = () => {
       };
     }
   }, []);
+
+  const handleManualCheckUpdate = async () => {
+    if (!electron || isCheckingUpdate) return;
+    setIsCheckingUpdate(true);
+    setUpdateStatusMsg('Checking...');
+    try {
+      const res = await electron.ipcRenderer.invoke('updater:check-now');
+      if (res && res.ready) {
+        setUpdateInfo({ version: res.version });
+        setUpdateStatusMsg(null);
+      } else if (res && res.upToDate) {
+        setUpdateStatusMsg(`v${res.currentVersion || appVersion} is up to date`);
+        setTimeout(() => setUpdateStatusMsg(null), 3500);
+      } else if (res && res.error) {
+        setUpdateStatusMsg(res.error);
+        setTimeout(() => setUpdateStatusMsg(null), 3500);
+      } else {
+        setUpdateStatusMsg('Up to date');
+        setTimeout(() => setUpdateStatusMsg(null), 3500);
+      }
+    } catch (_) {
+      setUpdateStatusMsg('Check failed');
+      setTimeout(() => setUpdateStatusMsg(null), 3500);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   const handleToggleConnection = async () => {
     if (connectionState === 'connected') {
@@ -220,9 +256,24 @@ export const App: React.FC = () => {
           <div>
             <h1 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
               <span>ChangeIt</span>
-              <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
-                v1.5.6
-              </span>
+              <div className="flex items-center space-x-1.5">
+                <span className="text-[10px] bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded-full font-mono">
+                  v{appVersion}
+                </span>
+                <button
+                  onClick={handleManualCheckUpdate}
+                  title="Check for updates"
+                  disabled={isCheckingUpdate}
+                  className="p-1 rounded-full text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isCheckingUpdate ? 'animate-spin text-blue-400' : ''}`} />
+                </button>
+                {updateStatusMsg && (
+                  <span className="text-[10px] text-blue-400 font-medium animate-in fade-in">
+                    {updateStatusMsg}
+                  </span>
+                )}
+              </div>
             </h1>
           </div>
         </div>

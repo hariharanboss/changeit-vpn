@@ -686,6 +686,7 @@ function downloadFile(url, destPath) {
         }
       }, (res) => {
         if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
           return get(res.headers.location);
         }
         if (res.statusCode !== 200) {
@@ -727,59 +728,85 @@ function isNewerVersion(remoteTag, localVer) {
   return false;
 }
 
-async function checkForAppUpdates() {
-  try {
-    let currentVersion = '1.3.4';
+function checkForAppUpdates() {
+  return new Promise((resolve) => {
     try {
-      const pkg = require(path.join(__dirname, '../package.json'));
-      if (pkg.version) currentVersion = pkg.version;
-    } catch (_) {}
+      let currentVersion = '1.5.9';
+      try {
+        const pkg = require(path.join(__dirname, '../package.json'));
+        if (pkg.version) currentVersion = pkg.version;
+      } catch (_) {}
 
-    const releaseApiUrl = 'https://api.github.com/repos/hariharanboss/changeit-vpn/releases/latest';
+      const releaseApiUrl = 'https://api.github.com/repos/hariharanboss/changeit-vpn/releases/latest';
 
-    https.get(releaseApiUrl, {
-      headers: {
-        'User-Agent': 'ChangeIt-Desktop-Updater',
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    }, (res) => {
-      if (res.statusCode !== 200) return;
-      let rawData = '';
-      res.on('data', chunk => rawData += chunk);
-      res.on('end', async () => {
-        try {
-          const release = JSON.parse(rawData);
-          const remoteTag = release.tag_name || '';
-          if (isNewerVersion(remoteTag, currentVersion)) {
-            const asarAsset = (release.assets || []).find(a => a.name === 'app.asar');
-            if (asarAsset && asarAsset.browser_download_url) {
-              // Save with non-asar extension so Electron does not attempt virtual fs parsing
-              const tempUpdate = path.join(os.tmpdir(), `changeit_update_${remoteTag}.pkg`);
-              await downloadFile(asarAsset.browser_download_url, tempUpdate);
-              
-              const prev = process.noAsar;
-              process.noAsar = true;
-              const exists = fs.existsSync(tempUpdate);
-              const validSize = exists && fs.statSync(tempUpdate).size > 50000;
-              process.noAsar = prev;
+      const req = https.get(releaseApiUrl, {
+        headers: {
+          'User-Agent': `ChangeIt-Desktop-Updater/${currentVersion}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      }, (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return resolve({ success: false, error: `GitHub API HTTP ${res.statusCode}`, currentVersion });
+        }
+        let rawData = '';
+        res.on('data', chunk => rawData += chunk);
+        res.on('end', async () => {
+          try {
+            const release = JSON.parse(rawData);
+            const remoteTag = release.tag_name || '';
+            const remoteVer = remoteTag.replace(/^v/, '');
+            if (isNewerVersion(remoteTag, currentVersion)) {
+              const asarAsset = (release.assets || []).find(a => a.name === 'app.asar');
+              if (asarAsset && asarAsset.browser_download_url) {
+                // Save with non-asar extension so Electron does not attempt virtual fs parsing
+                const tempUpdate = path.join(os.tmpdir(), `changeit_update_${remoteTag}.pkg`);
+                await downloadFile(asarAsset.browser_download_url, tempUpdate);
+                
+                const prev = process.noAsar;
+                process.noAsar = true;
+                const exists = fs.existsSync(tempUpdate);
+                const validSize = exists && fs.statSync(tempUpdate).size > 50000;
+                process.noAsar = prev;
 
-              if (validSize) {
-                updateDownloadedPath = tempUpdate;
-                newVersionAvailable = remoteTag.replace(/^v/, '');
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                  mainWindow.webContents.send('updater:ready', {
-                    version: newVersionAvailable,
-                    notes: release.body || ''
-                  });
+                if (validSize) {
+                  updateDownloadedPath = tempUpdate;
+                  newVersionAvailable = remoteVer;
+                  if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('updater:ready', {
+                      version: newVersionAvailable,
+                      notes: release.body || ''
+                    });
+                  }
+                  return resolve({ success: true, ready: true, version: remoteVer, currentVersion });
                 }
               }
+              return resolve({ success: false, error: 'Update asset not found', currentVersion });
+            } else {
+              return resolve({ success: true, ready: false, upToDate: true, version: remoteVer, currentVersion });
             }
+          } catch (e) {
+            return resolve({ success: false, error: e.message, currentVersion });
           }
-        } catch (_) {}
+        });
       });
-    }).on('error', () => {});
-  } catch (_) {}
+      req.on('error', (err) => {
+        resolve({ success: false, error: err.message, currentVersion });
+      });
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
+  });
 }
+
+ipcMain.handle('app:get-version', () => {
+  try {
+    const pkg = require(path.join(__dirname, '../package.json'));
+    return pkg.version || '1.5.9';
+  } catch (_) {
+    return '1.5.9';
+  }
+});
 
 ipcMain.handle('updater:get-status', () => {
   return {
@@ -789,11 +816,7 @@ ipcMain.handle('updater:get-status', () => {
 });
 
 ipcMain.handle('updater:check-now', async () => {
-  await checkForAppUpdates();
-  return {
-    ready: !!updateDownloadedPath,
-    version: newVersionAvailable
-  };
+  return await checkForAppUpdates();
 });
 
 ipcMain.handle('updater:apply', () => {

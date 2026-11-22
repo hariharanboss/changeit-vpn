@@ -1,6 +1,6 @@
 {
   "name": "changeit",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "ChangeIt - Firewall-Resilient Stealth Network Client",
   "main": "electron/main.js",
   "scripts": {
